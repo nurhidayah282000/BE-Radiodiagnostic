@@ -10,7 +10,7 @@ const UserPayloadSchema = Joi.object({
   address: Joi.string(),
   province: Joi.string().max(50),
   city: Joi.string().max(50),
-  postal_code: Joi.string().max(10),
+  postalCode: Joi.string().max(10),
   role: Joi.string().max(20).required(),
   profilePircture: Joi.string(),
 });
