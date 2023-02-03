@@ -63,7 +63,7 @@ class UsersService {
   async editUser(
     userId,
     {
-      fullname, email, phoneNumber, gender, profession, address, province, city, postal_code,
+      fullname, email, phoneNumber, gender, profession, address, province, city, postalCode,
     },
   ) {
     const query = {
@@ -74,7 +74,7 @@ class UsersService {
       WHERE id = $10 RETURNING id`,
       values: [fullname, email, phoneNumber,
         gender, profession, address, province,
-        city, postal_code, userId],
+        city, postalCode, userId],
     };
 
     const result = await this._pool.query(query);
