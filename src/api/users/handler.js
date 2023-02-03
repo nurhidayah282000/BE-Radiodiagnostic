@@ -40,8 +40,10 @@ class UsersHandler {
     }
   }
 
-  async getAllUsersHandler() {
+  async getAllUsersHandler({ auth }) {
     try {
+      const { id: credentialId } = auth.credentials;
+      await this._service.verifyUserAccess(credentialId);
       const users = await this._service.getAllUsers();
 
       return {
