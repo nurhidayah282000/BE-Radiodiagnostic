@@ -23,10 +23,16 @@ const uploads = require('./api/uploads');
 const StorageService = require('./services/storage/StorageService');
 const UploadsValidator = require('./validator/uploads');
 
+// patients
+const patients = require('./api/patients');
+const PatientsService = require('./services/postgres/PatientsService');
+const PatientsValidator = require('./validator/patients');
+
 const init = async () => {
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
   const storageService = new StorageService(path.resolve(__dirname, 'api/uploads/file/pictures'));
+  const patientsService = new PatientsService();
 
   const server = Hapi.server({
     port: process.env.PORT,
@@ -87,6 +93,13 @@ const init = async () => {
       options: {
         service: storageService,
         validator: UploadsValidator,
+      },
+    },
+    {
+      plugin: patients,
+      options: {
+        patientsService,
+        PatientsValidator,
       },
     },
   ]);
