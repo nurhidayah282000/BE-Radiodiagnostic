@@ -16,7 +16,7 @@ exports.up = (pgm) => {
       type: 'VARCHAR(10)',
       notNull: true,
     },
-    a: {
+    religion: {
       type: 'VARCHAR(30)',
       notNull: true,
     },
