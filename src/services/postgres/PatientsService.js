@@ -108,7 +108,7 @@ class PatientsService {
     }
   }
 
-  async verifyUserAccessRadiografer(credentialId) {
+  async verifyUserAccessRadiographer(credentialId) {
     const query = {
       text: 'SELECT role FROM users WHERE id = $1',
       values: [credentialId],
@@ -121,7 +121,7 @@ class PatientsService {
 
     const { role } = result.rows[0];
 
-    if (role !== 'radiografer') {
+    if (role !== 'radiographer') {
       throw new AuthenticationError('Anda tidak memilki akeses');
     }
   }
@@ -139,7 +139,7 @@ class PatientsService {
 
     const { role } = result.rows[0];
 
-    if (role !== 'radiografer') {
+    if (role !== 'radiographer') {
       throw new AuthenticationError('Anda tidak memilki akeses');
     }
   }

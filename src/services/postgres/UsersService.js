@@ -33,7 +33,7 @@ class UsersService {
 
   async getAllUsers() {
     const query = {
-      text: 'SELECT * FROM users WHERE role IN (\'doctor\',\'radiografer\')',
+      text: 'SELECT * FROM users WHERE role IN (\'doctor\',\'radiographer\')',
     };
 
     const result = await this._pool.query(query);

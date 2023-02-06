@@ -15,7 +15,7 @@ class PatientsHandler {
       const { id: credentialId } = auth.credentials;
       const { idNumber } = payload;
 
-      await this._service.verifyUserAccessRadiografer(credentialId);
+      await this._service.verifyUserAccessRadiographer(credentialId);
       await this._service.verifyNewIdNumber(idNumber);
 
       const patientId = await this._service.addPatient(payload);
@@ -35,7 +35,7 @@ class PatientsHandler {
   async getAllPatientsHandler({ auth }) {
     try {
       const { id: credentialId } = auth.credentials;
-      await this._service.verifyUserAccessRadiografer(credentialId);
+      await this._service.verifyUserAccessRadiographer(credentialId);
       await this._service.verifyUserAccessDoctor(credentialId);
       const patients = await this._service.getAllPatients();
 
@@ -51,7 +51,7 @@ class PatientsHandler {
   async getPatientHandler({ auth, params }) {
     try {
       const { id: credentialId } = auth.credentials;
-      await this._service.verifyUserAccessRadiografer(credentialId);
+      await this._service.verifyUserAccessRadiographer(credentialId);
       await this._service.verifyUserAccessDoctor(credentialId);
       const { patientId } = params;
       const patient = await this._service.getPatientById(patientId);
@@ -68,7 +68,7 @@ class PatientsHandler {
   async putPatientHandler({ payload, auth, params }, h) {
     try {
       const { id: credentialId } = auth.credentials;
-      await this._service.verifyUserAccessRadiografer(credentialId);
+      await this._service.verifyUserAccessRadiographer(credentialId);
 
       const { patientId } = params;
       const patient = await this._service.editPatient(patientId, payload);
@@ -90,7 +90,7 @@ class PatientsHandler {
       const { patientId } = params;
       const { id: credentialId } = auth.credentials;
 
-      await this._service.verifyUserAccessRadiografer(credentialId);
+      await this._service.verifyUserAccessRadiographer(credentialId);
       const patient = await this._service.deletePatientById(patientId);
 
       const response = h.response({
