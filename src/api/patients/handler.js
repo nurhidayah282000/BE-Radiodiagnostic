@@ -35,8 +35,7 @@ class PatientsHandler {
   async getAllPatientsHandler({ auth }) {
     try {
       const { id: credentialId } = auth.credentials;
-      await this._service.verifyUserAccessRadiographer(credentialId);
-      await this._service.verifyUserAccessDoctor(credentialId);
+      await this._service.verifyUserAccess(credentialId);
       const patients = await this._service.getAllPatients();
 
       return {
@@ -51,8 +50,7 @@ class PatientsHandler {
   async getPatientHandler({ auth, params }) {
     try {
       const { id: credentialId } = auth.credentials;
-      await this._service.verifyUserAccessRadiographer(credentialId);
-      await this._service.verifyUserAccessDoctor(credentialId);
+      await this._service.verifyUserAccess(credentialId);
       const { patientId } = params;
       const patient = await this._service.getPatientById(patientId);
 
