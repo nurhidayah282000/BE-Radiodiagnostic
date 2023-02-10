@@ -33,7 +33,7 @@ exports.up = (pgm) => {
       notNull: true,
     },
     age: {
-      type: 'VARCHAR(3)',
+      type: 'INTEGER',
     },
     phone_number: {
       type: 'VARCHAR(30)',
