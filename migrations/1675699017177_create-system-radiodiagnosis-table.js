@@ -8,6 +8,10 @@ exports.up = (pgm) => {
       type: 'VARCHAR(50)',
       notNull: true,
     },
+    tooth_number: {
+      type: 'NUMBER',
+      notNull: true,
+    },
     system_result: {
       type: 'VARCHAR(50)',
       notNull: true,
