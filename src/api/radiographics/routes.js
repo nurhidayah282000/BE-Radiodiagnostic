@@ -30,6 +30,14 @@ const routes = (handler) => [
     },
   },
   {
+    method: 'GET',
+    path: '/radiographics/recaps',
+    handler: handler.getAllRadiographicsRecapsHandler,
+    options: {
+      auth: 'radiodiagnostic_jwt',
+    },
+  },
+  {
     method: 'PUT',
     path: '/radiographics/edit/{radiographicId}/picture',
     handler: handler.putRadiographicPictureHandler,

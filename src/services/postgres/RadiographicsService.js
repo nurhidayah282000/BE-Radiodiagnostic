@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 const { nanoid } = require('nanoid');
 const { Pool } = require('pg');
 const InvariantError = require('../../exceptions/InvariantError');
@@ -47,7 +46,7 @@ class RadiographicsService {
 
   async getAllRadiographics(month) {
     let queryText = `SELECT histories.patient_id, patients.fullname, radiographics.panoramik_picture,
-    radiographics.panoramik_upload_date, radiographics.manual_interpretation, radiographics.status, doctor.fullname AS doctor_name,
+    radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status, doctor.fullname AS doctor_name,
     radiographer.fullname AS radiographer_name
     FROM histories
     LEFT JOIN patients ON histories.patient_id = patients.id
@@ -76,7 +75,7 @@ class RadiographicsService {
   async getRadiographicById(radiographicId) {
     const query = {
       text: `SELECT histories.patient_id, patients.fullname, radiographics.panoramik_picture,
-      radiographics.panoramik_upload_date, radiographics.manual_interpretation, radiographics.status, doctor.fullname AS doctor_name,
+      radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status, doctor.fullname AS doctor_name,
       radiographer.fullname AS radiographer_name
       FROM histories
       LEFT JOIN patients ON histories.patient_id = patients.id
@@ -112,9 +111,11 @@ class RadiographicsService {
   }
 
   async editRadiographicInterpretation(radiographicId, { manualInterpretation }) {
+    const uploadDate = new Date().toLocaleDateString('en-ZA', { timeZone: 'Asia/Jakarta' });
+
     const query = {
-      text: 'UPDATE radiographics SET manual_interpretation = $1 WHERE id = $2 RETURNING id, manual_interpretation',
-      values: [manualInterpretation, radiographicId],
+      text: 'UPDATE radiographics SET manual_interpretation = $1, panoramik_check_date = $2 WHERE id = $3 RETURNING id, manual_interpretation',
+      values: [manualInterpretation, uploadDate, radiographicId],
     };
 
     const result = await this._pool.query(query);
