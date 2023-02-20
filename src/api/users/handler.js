@@ -1,3 +1,5 @@
+const { nanoid } = require('nanoid');
+
 class UsersHandler {
   constructor(service, pictureService, validator, pictureValidator) {
     this._service = service;
@@ -21,8 +23,10 @@ class UsersHandler {
       await this._service.verifyUserAccess(credentialId);
 
       const {
-        fullname, email, password, role,
+        fullname, email, role,
       } = payload;
+
+      const password = `${role}-${nanoid(8)}`;
 
       const userId = await this._service.addUser({
         fullname, email, password, role,
@@ -32,6 +36,7 @@ class UsersHandler {
         status: 'success',
         message: 'User berhasil ditambahkan',
         data: userId,
+        newPassword: password,
       });
       response.code(201);
       return response;

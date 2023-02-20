@@ -44,6 +44,9 @@ exports.up = (pgm) => {
     profile_picture: {
       type: 'TEXT',
     },
+    status: {
+      type: 'INTEGER',
+    },
   });
 };
 

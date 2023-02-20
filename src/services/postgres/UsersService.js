@@ -18,9 +18,10 @@ class UsersService {
 
     const id = `${role}-${nanoid(16)}`;
     const hashedPassword = await bcrypt.hash(password, 10);
+    const status = 0;
     const query = {
-      text: 'INSERT INTO users (id, email, fullname, password, role) VALUES($1, $2, $3, $4, $5) RETURNING id, phone_number, fullname, email, profile_picture, role',
-      values: [id, email, fullname, hashedPassword, role],
+      text: 'INSERT INTO users (id, email, fullname, password, role, status) VALUES($1, $2, $3, $4, $5, $6) RETURNING id, phone_number, fullname, email, profile_picture, role',
+      values: [id, email, fullname, hashedPassword, role, status],
     };
 
     const result = await this._pool.query(query);
@@ -100,9 +101,10 @@ class UsersService {
   }
 
   async editUserPassword(userId, password) {
+    const status = 1;
     const query = {
-      text: 'UPDATE users SET password = $1 WHERE id = $2 RETURNING id',
-      values: [password, userId],
+      text: 'UPDATE users SET password = $1, status =$2 WHERE id = $3 RETURNING id',
+      values: [password, status, userId],
     };
 
     const result = await this._pool.query(query);
