@@ -16,7 +16,7 @@ class PatientsHandler {
       const { idNumber } = payload;
 
       await this._service.verifyUserAccessRadiographer(credentialId);
-      await this._service.verifyNewIdNumber(idNumber);
+      await this._service.verifyNewid_number(idNumber);
 
       const patientId = await this._service.addPatient(payload);
 

@@ -10,7 +10,6 @@ exports.up = (pgm) => {
     },
     doctor_id: {
       type: 'VARCHAR(50)',
-      notNull: true,
     },
     radiographer_id: {
       type: 'VARCHAR(50)',

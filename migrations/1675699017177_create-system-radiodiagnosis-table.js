@@ -9,7 +9,7 @@ exports.up = (pgm) => {
       notNull: true,
     },
     tooth_number: {
-      type: 'NUMBER',
+      type: 'INTEGER',
       notNull: true,
     },
     system_result: {

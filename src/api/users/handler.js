@@ -10,7 +10,9 @@ class UsersHandler {
     this.postUserHandler = this.postUserHandler.bind(this);
     this.getAllUsersHandler = this.getAllUsersHandler.bind(this);
     this.getUserHandler = this.getUserHandler.bind(this);
+    this.getUserByIdHandler = this.getUserByIdHandler.bind(this);
     this.putUserHandler = this.putUserHandler.bind(this);
+    this.putUserbyIdHandler = this.putUserbyIdHandler.bind(this);
     this.putUserPictureHandler = this.putUserPictureHandler.bind(this);
     this.putUserPasswordHandler = this.putUserPasswordHandler.bind(this);
     this.deleteUserByIdHandler = this.deleteUserByIdHandler.bind(this);
@@ -23,13 +25,13 @@ class UsersHandler {
       await this._service.verifyUserAccess(credentialId);
 
       const {
-        fullname, email, role,
+        fullname, email, role, phone, gender, address, province, city, post_code, nip
       } = payload;
 
       const password = `${role}-${nanoid(8)}`;
 
       const userId = await this._service.addUser({
-        fullname, email, password, role,
+        fullname, email, password, role, phone, gender, address, province, city, post_code, nip
       });
 
       const response = h.response({
@@ -74,11 +76,48 @@ class UsersHandler {
     }
   }
 
+  async getUserByIdHandler({ params, auth }) {
+    try {
+      const { userId } = params;
+      const { id: credentialId } = auth.credentials;
+
+      await this._service.verifyUserAccess(credentialId);
+      const user = await this._service.getUserById(userId);
+
+      return {
+        status: 'success',
+        data: user,
+      };
+    } catch (error) {
+      return error;
+    }
+  }
+
   async putUserHandler({ payload, auth }, h) {
     try {
       const { id: credentialId } = auth.credentials;
 
       const user = await this._service.editUser(credentialId, payload);
+
+      const response = h.response({
+        status: 'success',
+        message: 'User berhasil diperbarui',
+        data: user,
+      });
+      response.code(201);
+      return response;
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async putUserbyIdHandler({ params, payload, auth }, h) {
+    try {
+      const { userId } = params;
+      const { id: credentialId } = auth.credentials;
+
+      await this._service.verifyUserAccess(credentialId);
+      const user = await this._service.editUserById(userId, payload);
 
       const response = h.response({
         status: 'success',
@@ -118,10 +157,11 @@ class UsersHandler {
 
   async putUserPasswordHandler({ payload, auth }, h) {
     try {
-      const { password } = payload;
+      const { password, newPassword, newPasswordConfirmation } = payload;
       const { id: credentialId } = auth.credentials;
 
-      const user = await this._service.editUserPassword(credentialId, password);
+      await this._service.verifyNewPassword(credentialId, password, newPassword, newPasswordConfirmation);
+      const user = await this._service.editUserPassword(credentialId, newPassword);
 
       const response = h.response({
         status: 'success',
