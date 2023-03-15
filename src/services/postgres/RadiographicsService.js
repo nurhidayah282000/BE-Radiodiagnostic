@@ -104,15 +104,19 @@ class RadiographicsService {
 
   async getRadiographicById(radiographicId) {
     const query = {
-      text: `SELECT histories.patient_id, patients.medic_number, patients.fullname, radiographics.id AS radiographics_id, radiographics.panoramik_picture,
-      radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status,doctor_id AS doctor_id, doctor.fullname AS doctor_name,
-      radiographer.fullname AS radiographer_name
+      text: `SELECT histories.patient_id, patients.medic_number, patients.fullname, radiographics.id AS radiographics_id, 
+      radiographics.panoramik_picture, radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, 
+      radiographics.status,doctor_id AS doctor_id, doctor.fullname AS doctor_name, radiographer.fullname AS radiographer_name, 
+      json_agg(json_build_object('tooth_number', diagnoses.tooth_number, 'system_diagnosis', diagnoses.system_diagnosis, 'manual_diagnosis', diagnoses.manual_diagnosis, 'verificator_diagnosis', diagnoses.verificator_diagnosis)) AS diagnoses
       FROM histories
       LEFT JOIN patients ON histories.patient_id = patients.id
       LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
       LEFT JOIN users doctor ON histories.doctor_id = doctor.id
+      LEFT JOIN diagnoses ON radiographics.id = diagnoses.radiographic_id
       INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
       WHERE histories.radiographic_id = $1
+      GROUP BY histories.patient_id, patients.medic_number, patients.fullname, radiographics.id, radiographics.panoramik_picture,
+      radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status,doctor_id, doctor.fullname, radiographer.fullname
       `,
       values: [radiographicId],
     };
