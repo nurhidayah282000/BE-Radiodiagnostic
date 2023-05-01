@@ -32,11 +32,14 @@ class PatientsHandler {
     }
   }
 
-  async getAllPatientsHandler({ auth }) {
+  async getAllPatientsHandler({ auth, query }) {
     try {
       const { id: credentialId } = auth.credentials;
       await this._service.verifyUserAccess(credentialId);
-      const patients = await this._service.getAllPatients();
+      const page = query.page || 1;
+      const limit = 10;
+      const offset = (page - 1) * limit;
+      const patients = await this._service.getAllPatients(limit, offset);
 
       return {
         status: 'success',

@@ -27,7 +27,6 @@ class PatientsService {
     const age_dif = Date.now() - new_born_date;
     const age_date = new Date(age_dif);
     const age = Math.abs(age_date.getUTCFullYear() - 1970).toString();
-
     const id = `patient-${nanoid(16)}`;
     const query = {
       text: `INSERT INTO patients (id, fullname, medic_number, id_number,
@@ -59,11 +58,13 @@ class PatientsService {
     return result.rows[0];
   }
 
-  async getAllPatients() {
+  async getAllPatients(limit, offset) {
     const query = {
       text: `SELECT patients.*, users.fullname as radiographer 
       FROM patients 
-      LEFT JOIN users ON patients.radiographic_id = users.id`,
+      LEFT JOIN users ON patients.radiographic_id = users.id
+      LIMIT $1 OFFSET $2`,
+      values: [limit, offset],
     };
 
     const result = await this._pool.query(query);
