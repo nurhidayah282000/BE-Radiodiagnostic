@@ -66,7 +66,7 @@ class UsersService {
     return result.rows[0].total_rows;
   }
 
-  async getAllUsers({ limit, offset }) {
+  async getAllUsers(limit, offset) {
     const query = {
       text: "SELECT * FROM users WHERE role IN ('doctor','radiographer') LIMIT $1 OFFSET $2",
       values: [limit, offset],
