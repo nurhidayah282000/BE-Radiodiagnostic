@@ -56,9 +56,20 @@ class UsersService {
     return result.rows[0];
   }
 
-  async getAllUsers() {
+  async getUserTotalRows() {
     const query = {
-      text: "SELECT * FROM users WHERE role IN ('doctor','radiographer')",
+      text: "SELECT COUNT(*) as total_rows FROM users WHERE role IN ('doctor','radiographer')",
+    };
+
+    const result = await this._pool.query(query);
+
+    return result.rows[0].total_rows;
+  }
+
+  async getAllUsers({ limit, offset }) {
+    const query = {
+      text: "SELECT * FROM users WHERE role IN ('doctor','radiographer') LIMIT $1 OFFSET $2",
+      values: [limit, offset],
     };
 
     const result = await this._pool.query(query);

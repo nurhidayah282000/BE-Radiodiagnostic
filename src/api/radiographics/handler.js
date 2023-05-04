@@ -100,14 +100,26 @@ class RadiographicsHandler {
     try {
       const { id: credentialId } = auth.credentials;
       await this._service.verifyUserAccess(credentialId);
-
+      const page = query.page || 1;
+      const limit = 10;
+      const offset = (page - 1) * limit;
       const { month } = query;
-      const radiographics = await this._service.getAllRadiographics(month);
+      const radiographics = await this._service.getAllRadiographics(
+        month,
+        limit,
+        offset
+      );
+      const totalRows = await this._service.getRadiographicsTotalRows(month);
 
       return {
         status: "success",
         data: radiographics,
         count: radiographics.length,
+        meta: {
+          totalRows: totalRows,
+          totalPages: Math.ceil(totalRows / limit),
+          currentPage: page,
+        },
       };
     } catch (error) {
       return error;

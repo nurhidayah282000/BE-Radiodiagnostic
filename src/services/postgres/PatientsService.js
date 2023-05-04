@@ -58,10 +58,24 @@ class PatientsService {
     return result.rows[0];
   }
 
+  async getPatientTotalRows() {
+    const query = {
+      text: `SELECT COUNT(*) as total_rows FROM patients LEFT JOIN users ON patients.radiographic_id = users.id`,
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rowCount) {
+      throw new NotFoundError("Pasien tidak ditemukan");
+    }
+
+    return result.rows[0].total_rows;
+  }
+
   async getAllPatients(limit, offset) {
     const query = {
-      text: `SELECT patients.*, users.fullname as radiographer 
-      FROM patients 
+      text: `SELECT patients.*, users.fullname as radiographer
+      FROM patients
       LEFT JOIN users ON patients.radiographic_id = users.id
       LIMIT $1 OFFSET $2`,
       values: [limit, offset],

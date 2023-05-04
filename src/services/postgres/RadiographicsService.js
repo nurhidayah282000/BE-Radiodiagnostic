@@ -74,15 +74,14 @@ class RadiographicsService {
     return result.rows;
   }
 
-  async getAllRadiographics(month) {
-    let queryText = `SELECT histories.patient_id,patients.medic_number, patients.fullname, radiographics.panoramik_picture,
-    radiographics.panoramik_upload_date, radiographics.id AS radiographics_id, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status, doctor.fullname AS doctor_name,
-    radiographer.fullname AS radiographer_name
+  async getRadiographicsTotalRows(month) {
+    let queryText = `SELECT COUNT(*) as total_rows
     FROM histories
     LEFT JOIN patients ON histories.patient_id = patients.id
     LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
     LEFT JOIN users doctor ON histories.doctor_id = doctor.id
-    INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id`;
+    INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
+    `;
 
     if (month !== undefined) {
       queryText += ` WHERE EXTRACT(MONTH FROM date(radiographics.panoramik_upload_date)) = ${month}`;
@@ -90,6 +89,35 @@ class RadiographicsService {
 
     const query = {
       text: queryText,
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rowCount) {
+      throw new NotFoundError("Radiografi tidak ditemukan");
+    }
+
+    return result.rows[0].total_rows;
+  }
+
+  async getAllRadiographics(month, limit, offset) {
+    let queryText = `SELECT histories.patient_id,patients.medic_number, patients.fullname, radiographics.panoramik_picture,
+    radiographics.panoramik_upload_date, radiographics.id AS radiographics_id, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status, doctor.fullname AS doctor_name,
+    radiographer.fullname AS radiographer_name
+    FROM histories
+    LEFT JOIN patients ON histories.patient_id = patients.id
+    LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
+    LEFT JOIN users doctor ON histories.doctor_id = doctor.id
+    INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
+    `;
+
+    if (month !== undefined) {
+      queryText += ` WHERE EXTRACT(MONTH FROM date(radiographics.panoramik_upload_date)) = ${month}`;
+    }
+
+    const query = {
+      text: (queryText += ` LIMIT $1 OFFSET $2`),
+      values: [limit, offset],
     };
 
     const result = await this._pool.query(query);

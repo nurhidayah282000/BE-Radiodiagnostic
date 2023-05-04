@@ -40,10 +40,16 @@ class PatientsHandler {
       const limit = 10;
       const offset = (page - 1) * limit;
       const patients = await this._service.getAllPatients(limit, offset);
+      const totalRows = await this._service.getPatientTotalRows();
 
       return {
         status: 'success',
         data: patients,
+        meta: {
+          totalRows: totalRows,
+          totalPages: Math.ceil(totalRows / limit),
+          currentPage: page,
+        },
       };
     } catch (error) {
       return error;

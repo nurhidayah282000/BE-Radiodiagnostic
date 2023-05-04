@@ -47,15 +47,24 @@ class UsersHandler {
     }
   }
 
-  async getAllUsersHandler({ auth }) {
+  async getAllUsersHandler({ auth, query }) {
     try {
       const { id: credentialId } = auth.credentials;
       await this._service.verifyUserAccess(credentialId);
-      const users = await this._service.getAllUsers();
+      const page = query.page || 1;
+      const limit = 10;
+      const offset = (page - 1) * limit;
+      const users = await this._service.getAllUsers(limit, offset);
+      const totalRows = await this._service.getUserTotalRows();
 
       return {
         status: 'success',
         data: users,
+        meta: {
+          totalRows: totalRows,
+          totalPages: Math.ceil(totalRows / limit),
+          currentPage: page,
+        },
       };
     } catch (error) {
       return error;
