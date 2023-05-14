@@ -1,6 +1,6 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-inner-declarations */
-const excelJS = require("exceljs");
+const excelJS = require('exceljs');
 
 class RadiographicsHandler {
   constructor(service, pictureService, validator, pictureValidator) {
@@ -10,24 +10,16 @@ class RadiographicsHandler {
     this._pictureValidator = pictureValidator;
 
     this.postRadiographicHandler = this.postRadiographicHandler.bind(this);
-    this.getAllRadiographicsUserHandler =
-      this.getAllRadiographicsUserHandler.bind(this);
-    this.getAllRadiographicsHandler =
-      this.getAllRadiographicsHandler.bind(this);
+    this.getAllRadiographicsUserHandler = this.getAllRadiographicsUserHandler.bind(this);
+    this.getAllRadiographicsHandler = this.getAllRadiographicsHandler.bind(this);
     this.getAllDoctorsUserHandler = this.getAllDoctorsUserHandler.bind(this);
-    this.getAllRadiographicsRecapsHandler =
-      this.getAllRadiographicsRecapsHandler.bind(this);
+    this.getAllRadiographicsRecapsHandler = this.getAllRadiographicsRecapsHandler.bind(this);
     this.getRadiographicHandler = this.getRadiographicHandler.bind(this);
-    this.putRadiographicPictureHandler =
-      this.putRadiographicPictureHandler.bind(this);
-    this.putRadiographicDoctorHandler =
-      this.putRadiographicDoctorHandler.bind(this);
-    this.putRadiographicInterpretationHandler =
-      this.putRadiographicInterpretationHandler.bind(this);
-    this.deleteRadiographicInterpretationHandler =
-      this.deleteRadiographicInterpretationHandler.bind(this);
-    this.deleteRadiographicByIdHandler =
-      this.deleteRadiographicByIdHandler.bind(this);
+    this.putRadiographicPictureHandler = this.putRadiographicPictureHandler.bind(this);
+    this.putRadiographicDoctorHandler = this.putRadiographicDoctorHandler.bind(this);
+    this.putRadiographicInterpretationHandler = this.putRadiographicInterpretationHandler.bind(this);
+    this.deleteRadiographicInterpretationHandler = this.deleteRadiographicInterpretationHandler.bind(this);
+    this.deleteRadiographicByIdHandler = this.deleteRadiographicByIdHandler.bind(this);
   }
 
   async postRadiographicHandler({ payload, auth, params }, h) {
@@ -39,24 +31,24 @@ class RadiographicsHandler {
       const { panoramikPicture } = payload;
 
       this._pictureValidator.validatePictureHeaders(
-        panoramikPicture.hapi.headers
+        panoramikPicture.hapi.headers,
       );
 
       const filename = await this._pictureService.writeFile(
         panoramikPicture,
-        panoramikPicture.hapi
+        panoramikPicture.hapi,
       );
       const pictureUrl = `/upload/pictures/${filename}`;
 
       const radiographicId = await this._service.addRadiographic(
         pictureUrl,
         patientId,
-        credentialId
+        credentialId,
       );
 
       const response = h.response({
-        status: "success",
-        message: "Radiografi berhasil ditambahkan",
+        status: 'success',
+        message: 'Radiografi berhasil ditambahkan',
         data: radiographicId,
       });
       response.code(201);
@@ -73,7 +65,7 @@ class RadiographicsHandler {
       const users = await this._service.getAllRadiographicsUser();
 
       return {
-        status: "success",
+        status: 'success',
         data: users,
       };
     } catch (error) {
@@ -88,7 +80,7 @@ class RadiographicsHandler {
       const users = await this._service.getAllDoctorsUser();
 
       return {
-        status: "success",
+        status: 'success',
         data: users,
       };
     } catch (error) {
@@ -103,20 +95,21 @@ class RadiographicsHandler {
       const page = query.page || 1;
       const limit = 10;
       const offset = (page - 1) * limit;
-      const { month } = query;
+      const { month, search } = query;
       const radiographics = await this._service.getAllRadiographics(
         month,
         limit,
-        offset
+        offset,
+        search,
       );
       const totalRows = await this._service.getRadiographicsTotalRows(month);
 
       return {
-        status: "success",
+        status: 'success',
         data: radiographics,
         count: radiographics.length,
         meta: {
-          totalRows: totalRows,
+          totalRows,
           totalPages: Math.ceil(totalRows / limit),
           currentPage: page,
         },
@@ -136,18 +129,18 @@ class RadiographicsHandler {
 
       function monthName(mon) {
         return [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December",
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
         ][mon - 1];
       }
 
@@ -155,27 +148,27 @@ class RadiographicsHandler {
       const worksheet = workbook.addWorksheet(monthName(month));
 
       worksheet.columns = [
-        { header: "Kode Pasien", key: "patient_id", width: 30 },
-        { header: "Nama Pasien", key: "fullname", width: 30 },
-        { header: "Url Panoramik", key: "panoramik_picture", width: 30 },
+        { header: 'Kode Pasien', key: 'patient_id', width: 30 },
+        { header: 'Nama Pasien', key: 'fullname', width: 30 },
+        { header: 'Url Panoramik', key: 'panoramik_picture', width: 30 },
         {
-          header: "Tanggal Pengecekan Radiografer",
-          key: "panoramik_upload_date",
+          header: 'Tanggal Pengecekan Radiografer',
+          key: 'panoramik_upload_date',
           width: 30,
         },
         {
-          header: "Tanggal Pengecekan Dokter",
-          key: "panoramik_check_date",
+          header: 'Tanggal Pengecekan Dokter',
+          key: 'panoramik_check_date',
           width: 30,
         },
         {
-          header: "Interpretasi Manual",
-          key: "manual_interpretation",
+          header: 'Interpretasi Manual',
+          key: 'manual_interpretation',
           width: 50,
         },
-        { header: "Status", key: "status", width: 10 },
-        { header: "Nama Dokter", key: "doctor_name", width: 30 },
-        { header: "Nama Radiografer", key: "radiographer_name", width: 30 },
+        { header: 'Status', key: 'status', width: 10 },
+        { header: 'Nama Dokter', key: 'doctor_name', width: 30 },
+        { header: 'Nama Radiografer', key: 'radiographer_name', width: 30 },
       ];
 
       // eslint-disable-next-line no-plusplus
@@ -185,7 +178,7 @@ class RadiographicsHandler {
 
       worksheet.getRow(1).eachCell((cell) => {
         cell.font = { bold: true };
-        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
       });
 
       // worksheet.getCell('A1').alignment = { vertical: 'top', horizontal: 'left' };
@@ -195,11 +188,11 @@ class RadiographicsHandler {
       const excelUrl = `/upload/recaps/${filename}`;
 
       await workbook.xlsx.writeFile(
-        `./src/api/uploads/file/recaps/${filename}`
+        `./src/api/uploads/file/recaps/${filename}`,
       );
 
       return {
-        status: "success",
+        status: 'success',
         data: { excelUrl },
       };
     } catch (error) {
@@ -213,11 +206,11 @@ class RadiographicsHandler {
       await this._service.verifyUserAccess(credentialId);
       const { radiographicId } = params;
       const radiographic = await this._service.getRadiographicById(
-        radiographicId
+        radiographicId,
       );
 
       return {
-        status: "success",
+        status: 'success',
         data: radiographic,
       };
     } catch (error) {
@@ -234,23 +227,23 @@ class RadiographicsHandler {
       const { panoramikPicture } = payload;
 
       this._pictureValidator.validatePictureHeaders(
-        panoramikPicture.hapi.headers
+        panoramikPicture.hapi.headers,
       );
 
       const filename = await this._pictureService.writeFile(
         panoramikPicture,
-        panoramikPicture.hapi
+        panoramikPicture.hapi,
       );
       const pictureUrl = `/upload/pictures/${filename}`;
 
       const radiographic = await this._service.editRadiographicPicture(
         radiographicId,
-        pictureUrl
+        pictureUrl,
       );
 
       const response = h.response({
-        status: "success",
-        message: "Gambar radiografi berhasil diperbarui",
+        status: 'success',
+        message: 'Gambar radiografi berhasil diperbarui',
         data: radiographic,
       });
       response.code(201);
@@ -269,12 +262,12 @@ class RadiographicsHandler {
 
       const radiographic = await this._service.editRadiographicDoctor(
         radiographicId,
-        payload
+        payload,
       );
 
       const response = h.response({
-        status: "success",
-        message: "Radiografi berhasil diperbarui",
+        status: 'success',
+        message: 'Radiografi berhasil diperbarui',
         data: radiographic,
       });
       response.code(201);
@@ -293,12 +286,12 @@ class RadiographicsHandler {
 
       const radiographic = await this._service.editRadiographicInterpretation(
         radiographicId,
-        payload
+        payload,
       );
 
       const response = h.response({
-        status: "success",
-        message: "Interpretasi manual radiografi berhasil diperbarui",
+        status: 'success',
+        message: 'Interpretasi manual radiografi berhasil diperbarui',
         data: radiographic,
       });
       response.code(201);
@@ -316,12 +309,12 @@ class RadiographicsHandler {
       const { radiographicId } = params;
 
       const radiographic = await this._service.deleteRadiographicInterpretation(
-        radiographicId
+        radiographicId,
       );
 
       const response = h.response({
-        status: "success",
-        message: "Interpretasi manual radiografi berhasil diperbarui",
+        status: 'success',
+        message: 'Interpretasi manual radiografi berhasil diperbarui',
         data: radiographic,
       });
       response.code(201);
@@ -338,12 +331,12 @@ class RadiographicsHandler {
 
       await this._service.verifyUserAccessRadiographer(credentialId);
       const radiographic = await this._service.deleteRadiographicById(
-        radiographicId
+        radiographicId,
       );
 
       const response = h.response({
-        status: "success",
-        message: "Radiografi berhasil dihapus",
+        status: 'success',
+        message: 'Radiografi berhasil dihapus',
         data: radiographic,
       });
       response.code(201);

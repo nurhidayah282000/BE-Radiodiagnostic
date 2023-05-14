@@ -1,8 +1,8 @@
-const { nanoid } = require("nanoid");
-const { Pool } = require("pg");
-const InvariantError = require("../../exceptions/InvariantError");
-const NotFoundError = require("../../exceptions/NotFoundError");
-const AuthenticationError = require("../../exceptions/AuthenticationError");
+const { nanoid } = require('nanoid');
+const { Pool } = require('pg');
+const InvariantError = require('../../exceptions/InvariantError');
+const NotFoundError = require('../../exceptions/NotFoundError');
+const AuthenticationError = require('../../exceptions/AuthenticationError');
 
 class RadiographicsService {
   constructor() {
@@ -10,8 +10,8 @@ class RadiographicsService {
   }
 
   async addRadiographic(panoramikPicture, patientId, radiographerId) {
-    const uploadDate = new Date().toLocaleDateString("en-ZA", {
-      timeZone: "Asia/Jakarta",
+    const uploadDate = new Date().toLocaleDateString('en-ZA', {
+      timeZone: 'Asia/Jakarta',
     });
 
     const radiographicId = `radiographic-${nanoid(16)}`;
@@ -26,7 +26,7 @@ class RadiographicsService {
     const radiographicResult = await this._pool.query(radiographicQuery);
 
     if (!radiographicResult.rowCount) {
-      throw new InvariantError("Radiografi gagal ditambahkan");
+      throw new InvariantError('Radiografi gagal ditambahkan');
     }
 
     const historyId = `history-${nanoid(16)}`;
@@ -40,7 +40,7 @@ class RadiographicsService {
     const historyResult = await this._pool.query(historyQuery);
 
     if (!historyResult.rowCount) {
-      throw new InvariantError("Riwayat gagal ditambahkan");
+      throw new InvariantError('Riwayat gagal ditambahkan');
     }
 
     return radiographicResult.rows[0];
@@ -54,7 +54,7 @@ class RadiographicsService {
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new NotFoundError("User tidak ditemukan");
+      throw new NotFoundError('User tidak ditemukan');
     }
 
     return result.rows;
@@ -68,7 +68,7 @@ class RadiographicsService {
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new NotFoundError("User tidak ditemukan");
+      throw new NotFoundError('User tidak ditemukan');
     }
 
     return result.rows;
@@ -94,13 +94,13 @@ class RadiographicsService {
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new NotFoundError("Radiografi tidak ditemukan");
+      throw new NotFoundError('Radiografi tidak ditemukan');
     }
 
     return result.rows[0].total_rows;
   }
 
-  async getAllRadiographics(month, limit, offset) {
+  async getAllRadiographics(month, limit, offset, search) {
     let queryText = `SELECT histories.patient_id,patients.medic_number, patients.fullname, radiographics.panoramik_picture,
     radiographics.panoramik_upload_date, radiographics.id AS radiographics_id, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status, doctor.fullname AS doctor_name,
     radiographer.fullname AS radiographer_name
@@ -111,20 +111,36 @@ class RadiographicsService {
     INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
     `;
 
-    if (month !== undefined) {
-      queryText += ` WHERE EXTRACT(MONTH FROM date(radiographics.panoramik_upload_date)) = ${month}`;
+    const queryParams = [];
+    if (search) {
+      const searchParam = `%${search.toLowerCase()}%`;
+      queryText += 'WHERE LOWER(patients.fullname) LIKE $1 OR LOWER(patients.medic_number) LIKE $1';
+      queryParams.push(searchParam);
     }
 
+    if (month !== undefined) {
+      if (queryParams.length > 0) {
+        queryText += ' AND ';
+      } else {
+        queryText += ' WHERE ';
+      }
+      queryText += `EXTRACT(MONTH FROM date(radiographics.panoramik_upload_date)) = $${queryParams.length + 1}`;
+      queryParams.push(month);
+    }
+
+    queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+    queryParams.push(limit, offset);
+
     const query = {
-      text: (queryText += ` LIMIT $1 OFFSET $2`),
-      values: [limit, offset],
+      text: queryText,
+      values: queryParams,
     };
 
     const result = await this._pool.query(query);
     // add system radiodiagnosis after query..
 
     if (!result.rowCount) {
-      throw new NotFoundError("Radiografi tidak ditemukan");
+      throw new NotFoundError('Radiografi tidak ditemukan');
     }
 
     return result.rows;
@@ -152,7 +168,7 @@ class RadiographicsService {
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new NotFoundError("Radiografi tidak ditemukan");
+      throw new NotFoundError('Radiografi tidak ditemukan');
     }
 
     return result.rows[0];
@@ -160,42 +176,42 @@ class RadiographicsService {
 
   async editRadiographicDoctor(radiographicId, { doctorId }) {
     const query = {
-      text: "UPDATE histories SET doctor_id = $1 WHERE radiographic_id = $2 RETURNING id",
+      text: 'UPDATE histories SET doctor_id = $1 WHERE radiographic_id = $2 RETURNING id',
       values: [doctorId, radiographicId],
     };
 
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new InvariantError("Radiografi gagal diperbarui");
+      throw new InvariantError('Radiografi gagal diperbarui');
     }
     return result.rows[0];
   }
 
   async editRadiographicPicture(radiographicId, pictureUrl) {
     const query = {
-      text: "UPDATE radiographics SET panoramik_picture = $1 WHERE id = $2 RETURNING id, panoramik_picture",
+      text: 'UPDATE radiographics SET panoramik_picture = $1 WHERE id = $2 RETURNING id, panoramik_picture',
       values: [pictureUrl, radiographicId],
     };
 
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new InvariantError("Gambar radiografi gagal diperbarui");
+      throw new InvariantError('Gambar radiografi gagal diperbarui');
     }
     return result.rows[0];
   }
 
   async editRadiographicInterpretation(
     radiographicId,
-    { manualInterpretation }
+    { manualInterpretation },
   ) {
-    const uploadDate = new Date().toLocaleDateString("en-ZA", {
-      timeZone: "Asia/Jakarta",
+    const uploadDate = new Date().toLocaleDateString('en-ZA', {
+      timeZone: 'Asia/Jakarta',
     });
 
     const query = {
-      text: "UPDATE radiographics SET manual_interpretation = $1, panoramik_check_date = $2 WHERE id = $3 RETURNING id, manual_interpretation",
+      text: 'UPDATE radiographics SET manual_interpretation = $1, panoramik_check_date = $2 WHERE id = $3 RETURNING id, manual_interpretation',
       values: [manualInterpretation, uploadDate, radiographicId],
     };
 
@@ -203,7 +219,7 @@ class RadiographicsService {
 
     if (!result.rowCount) {
       throw new InvariantError(
-        "Interpretasi manual radiografi gagal diperbarui"
+        'Interpretasi manual radiografi gagal diperbarui',
       );
     }
     return result.rows[0];
@@ -211,7 +227,7 @@ class RadiographicsService {
 
   async deleteRadiographicInterpretation(radiographicId) {
     const query = {
-      text: "UPDATE radiographics SET manual_interpretation = null, panoramik_check_date = null WHERE id = $1 RETURNING id",
+      text: 'UPDATE radiographics SET manual_interpretation = null, panoramik_check_date = null WHERE id = $1 RETURNING id',
       values: [radiographicId],
     };
 
@@ -219,7 +235,7 @@ class RadiographicsService {
 
     if (!result.rowCount) {
       throw new InvariantError(
-        "Interpretasi manual radiografi gagal diperbarui"
+        'Interpretasi manual radiografi gagal diperbarui',
       );
     }
     return result.rows[0];
@@ -227,68 +243,68 @@ class RadiographicsService {
 
   async deleteRadiographicById(id) {
     const query = {
-      text: "DELETE FROM radiographics WHERE id = $1 RETURNING id",
+      text: 'DELETE FROM radiographics WHERE id = $1 RETURNING id',
       values: [id],
     };
 
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new NotFoundError("Pasien gagal dihapus. Id tidak ditemukan");
+      throw new NotFoundError('Pasien gagal dihapus. Id tidak ditemukan');
     }
   }
 
   async verifyUserAccess(credentialId) {
     const query = {
-      text: "SELECT role FROM users WHERE id = $1",
+      text: 'SELECT role FROM users WHERE id = $1',
       values: [credentialId],
     };
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new AuthenticationError("Kredensial anda invalid");
+      throw new AuthenticationError('Kredensial anda invalid');
     }
 
     const { role } = result.rows[0];
 
-    if (!(role === "radiographer" || role === "doctor")) {
-      throw new AuthenticationError("Anda tidak memilki akeses");
+    if (!(role === 'radiographer' || role === 'doctor')) {
+      throw new AuthenticationError('Anda tidak memilki akeses');
     }
   }
 
   async verifyUserAccessRadiographer(credentialId) {
     const query = {
-      text: "SELECT role FROM users WHERE id = $1",
+      text: 'SELECT role FROM users WHERE id = $1',
       values: [credentialId],
     };
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new AuthenticationError("Kredensial anda invalid");
+      throw new AuthenticationError('Kredensial anda invalid');
     }
 
     const { role } = result.rows[0];
 
-    if (role !== "radiographer") {
-      throw new AuthenticationError("Anda tidak memilki akeses");
+    if (role !== 'radiographer') {
+      throw new AuthenticationError('Anda tidak memilki akeses');
     }
   }
 
   async verifyUserAccessDoctor(credentialId) {
     const query = {
-      text: "SELECT role FROM users WHERE id = $1",
+      text: 'SELECT role FROM users WHERE id = $1',
       values: [credentialId],
     };
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new AuthenticationError("Kredensial anda invalid");
+      throw new AuthenticationError('Kredensial anda invalid');
     }
 
     const { role } = result.rows[0];
 
-    if (role !== "doctor") {
-      throw new AuthenticationError("Anda tidak memilki akeses");
+    if (role !== 'doctor') {
+      throw new AuthenticationError('Anda tidak memilki akeses');
     }
   }
 }

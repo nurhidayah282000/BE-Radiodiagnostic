@@ -25,13 +25,13 @@ class UsersHandler {
       await this._service.verifyUserAccess(credentialId);
 
       const {
-        fullname, email, role, phone, gender, address, province, city, post_code, nip
+        fullname, email, role, phone, gender, address, province, city, post_code, nip,
       } = payload;
 
       const password = `${role}-${nanoid(8)}`;
 
       const userId = await this._service.addUser({
-        fullname, email, password, role, phone, gender, address, province, city, post_code, nip
+        fullname, email, password, role, phone, gender, address, province, city, post_code, nip,
       });
 
       const response = h.response({
@@ -52,16 +52,17 @@ class UsersHandler {
       const { id: credentialId } = auth.credentials;
       await this._service.verifyUserAccess(credentialId);
       const page = query.page || 1;
+      const { search } = query;
       const limit = 10;
       const offset = (page - 1) * limit;
-      const users = await this._service.getAllUsers(limit, offset);
+      const users = await this._service.getAllUsers(limit, offset, search);
       const totalRows = await this._service.getUserTotalRows();
 
       return {
         status: 'success',
         data: users,
         meta: {
-          totalRows: totalRows,
+          totalRows,
           totalPages: Math.ceil(totalRows / limit),
           currentPage: page,
         },

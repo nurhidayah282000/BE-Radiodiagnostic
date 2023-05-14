@@ -37,16 +37,17 @@ class PatientsHandler {
       const { id: credentialId } = auth.credentials;
       await this._service.verifyUserAccess(credentialId);
       const page = query.page || 1;
+      const { search } = query;
       const limit = 10;
       const offset = (page - 1) * limit;
-      const patients = await this._service.getAllPatients(limit, offset);
+      const patients = await this._service.getAllPatients(limit, offset, search);
       const totalRows = await this._service.getPatientTotalRows();
 
       return {
         status: 'success',
         data: patients,
         meta: {
-          totalRows: totalRows,
+          totalRows,
           totalPages: Math.ceil(totalRows / limit),
           currentPage: page,
         },
