@@ -5,6 +5,7 @@ class PatientsHandler {
 
     this.postPatientHandler = this.postPatientHandler.bind(this);
     this.getAllPatientsHandler = this.getAllPatientsHandler.bind(this);
+    this.getAllPatientHandler = this.getAllPatientHandler.bind(this);
     this.getPatientHandler = this.getPatientHandler.bind(this);
     this.putPatientHandler = this.putPatientHandler.bind(this);
     this.deletePatientByIdHandler = this.deletePatientByIdHandler.bind(this);
@@ -21,12 +22,27 @@ class PatientsHandler {
       const patientId = await this._service.addPatient(payload);
 
       const response = h.response({
-        status: 'success',
-        message: 'Pasien berhasil ditambahkan',
+        status: "success",
+        message: "Pasien berhasil ditambahkan",
         data: patientId,
       });
       response.code(201);
       return response;
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async getAllPatientHandler({ auth, query }) {
+    try {
+      const { id: credentialId } = auth.credentials;
+      await this._service.verifyUserAccess(credentialId);
+      const patients = await this._service.getAllPatient();
+
+      return {
+        status: "success",
+        data: patients,
+      };
     } catch (error) {
       return error;
     }
@@ -40,15 +56,23 @@ class PatientsHandler {
       const { search } = query;
       const limit = 10;
       const offset = (page - 1) * limit;
-      const patients = await this._service.getAllPatients(limit, offset, search);
-      const totalRows = await this._service.getPatientTotalRows();
+      const patients = await this._service.getAllPatients(
+        limit,
+        offset,
+        search
+      );
+      const {total, verified, unverified, thisDay, thisMonth} = await this._service.getPatientTotalRows();
 
       return {
-        status: 'success',
+        status: "success",
         data: patients,
         meta: {
-          totalRows,
-          totalPages: Math.ceil(totalRows / limit),
+          total,
+          verified,
+          unverified,
+          thisDay,
+          thisMonth,
+          totalPages: Math.ceil(total / limit),
           currentPage: page,
         },
       };
@@ -65,7 +89,7 @@ class PatientsHandler {
       const patient = await this._service.getPatientById(patientId);
 
       return {
-        status: 'success',
+        status: "success",
         data: patient,
       };
     } catch (error) {
@@ -82,8 +106,8 @@ class PatientsHandler {
       const patient = await this._service.editPatient(patientId, payload);
 
       const response = h.response({
-        status: 'success',
-        message: 'Pasien berhasil diperbarui',
+        status: "success",
+        message: "Pasien berhasil diperbarui",
         data: patient,
       });
       response.code(201);
@@ -102,8 +126,8 @@ class PatientsHandler {
       const patient = await this._service.deletePatientById(patientId);
 
       const response = h.response({
-        status: 'success',
-        message: 'Pasien berhasil dihapus',
+        status: "success",
+        message: "Pasien berhasil dihapus",
         data: patient,
       });
       response.code(201);

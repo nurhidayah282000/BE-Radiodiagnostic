@@ -12,9 +12,11 @@ class RadiographicsHandler {
     this.postRadiographicHandler = this.postRadiographicHandler.bind(this);
     this.getAllRadiographicsUserHandler = this.getAllRadiographicsUserHandler.bind(this);
     this.getAllRadiographicsHandler = this.getAllRadiographicsHandler.bind(this);
+    this.getAllHistoriesHandler = this.getAllHistoriesHandler.bind(this);
     this.getAllDoctorsUserHandler = this.getAllDoctorsUserHandler.bind(this);
     this.getAllRadiographicsRecapsHandler = this.getAllRadiographicsRecapsHandler.bind(this);
     this.getRadiographicHandler = this.getRadiographicHandler.bind(this);
+    this.getHistoryHandler = this.getHistoryHandler.bind(this);
     this.putRadiographicPictureHandler = this.putRadiographicPictureHandler.bind(this);
     this.putRadiographicDoctorHandler = this.putRadiographicDoctorHandler.bind(this);
     this.putRadiographicInterpretationHandler = this.putRadiographicInterpretationHandler.bind(this);
@@ -29,6 +31,7 @@ class RadiographicsHandler {
 
       const { patientId } = params;
       const { panoramikPicture } = payload;
+      const { radiographerId } = payload;
 
       this._pictureValidator.validatePictureHeaders(
         panoramikPicture.hapi.headers,
@@ -43,7 +46,7 @@ class RadiographicsHandler {
       const radiographicId = await this._service.addRadiographic(
         pictureUrl,
         patientId,
-        credentialId,
+        radiographerId,
       );
 
       const response = h.response({
@@ -93,10 +96,41 @@ class RadiographicsHandler {
       const { id: credentialId } = auth.credentials;
       await this._service.verifyUserAccess(credentialId);
       const page = query.page || 1;
-      const limit = 10;
+      const limit = 6;
       const offset = (page - 1) * limit;
       const { month, search } = query;
       const radiographics = await this._service.getAllRadiographics(
+        month,
+        limit,
+        offset,
+        search,
+      );
+      const totalRows = await this._service.getRadiographicsTotalRows(month);
+
+      return {
+        status: 'success',
+        data: radiographics,
+        count: radiographics.length,
+        meta: {
+          totalRows,
+          totalPages: Math.ceil(totalRows / limit),
+          currentPage: page,
+        },
+      };
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async getAllHistoriesHandler({ auth, query }) {
+    try {
+      const { id: credentialId } = auth.credentials;
+      await this._service.verifyUserAccess(credentialId);
+      const page = query.page || 1;
+      const limit = 6;
+      const offset = (page - 1) * limit;
+      const { month, search } = query;
+      const radiographics = await this._service.getAllHistories(
         month,
         limit,
         offset,
@@ -207,6 +241,24 @@ class RadiographicsHandler {
       const { radiographicId } = params;
       const radiographic = await this._service.getRadiographicById(
         radiographicId,
+      );
+
+      return {
+        status: 'success',
+        data: radiographic,
+      };
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async getHistoryHandler({ auth, params }) {
+    try {
+      const { id: credentialId } = auth.credentials;
+      await this._service.verifyUserAccess(credentialId);
+      const { historyId } = params;
+      const radiographic = await this._service.getHistoryById(
+        historyId,
       );
 
       return {

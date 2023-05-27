@@ -23,6 +23,14 @@ const routes = (handler) => [
   },
   {
     method: "GET",
+    path: "/radiographics/history/detail/{historyId}",
+    handler: handler.getHistoryHandler,
+    options: {
+      auth: "radiodiagnostic_jwt",
+    },
+  },
+  {
+    method: "GET",
     path: "/radiographics/users/all",
     handler: handler.getAllRadiographicsUserHandler,
     options: {
@@ -41,6 +49,14 @@ const routes = (handler) => [
     method: "GET",
     path: "/radiographics/all",
     handler: handler.getAllRadiographicsHandler,
+    options: {
+      auth: "radiodiagnostic_jwt",
+    },
+  },
+  {
+    method: "GET",
+    path: "/radiographics/histories/all",
+    handler: handler.getAllHistoriesHandler,
     options: {
       auth: "radiodiagnostic_jwt",
     },

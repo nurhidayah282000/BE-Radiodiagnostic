@@ -24,6 +24,14 @@ const routes = (handler) => [
     },
   },
   {
+    method: 'GET',
+    path: '/patient/all',
+    handler: handler.getAllPatientHandler,
+    options: {
+      auth: 'radiodiagnostic_jwt',
+    },
+  },
+  {
     method: 'PUT',
     path: '/patients/edit/{patientId}',
     handler: handler.putPatientHandler,
