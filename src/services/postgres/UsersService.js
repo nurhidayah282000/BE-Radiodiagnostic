@@ -56,9 +56,20 @@ class UsersService {
     return result.rows[0];
   }
 
-  async getUserTotalRows() {
+  async getUserTotalRows(search) {
+    let queryText =
+      "SELECT COUNT(*) as total_rows, role FROM users WHERE role IN ('doctor','radiographer') group by role";
+
+    let queryParams = [];
+    if (search) {
+      queryText =
+        "SELECT COUNT(*) as total_rows, role FROM users WHERE (LOWER(fullname) LIKE $1 OR LOWER(nip) LIKE $1) AND role IN ('doctor','radiographer') group by role";
+      queryParams = [`%${search.toLowerCase()}%`];
+    }
+
     const query = {
-      text: "SELECT COUNT(*) as total_rows, role FROM users WHERE role IN ('doctor','radiographer') group by role",
+      text: queryText,
+      values: queryParams,
     };
 
     const result = await this._pool.query(query);

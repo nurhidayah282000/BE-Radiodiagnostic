@@ -75,7 +75,7 @@ class UsersHandler {
       const limit = 10;
       const offset = (page - 1) * limit;
       const users = await this._service.getAllUsers(limit, offset, search);
-      const totalRows = await this._service.getUserTotalRows();
+      const totalRows = await this._service.getUserTotalRows(search);
 
       let doctor = 0;
       let radiographer = 0;
