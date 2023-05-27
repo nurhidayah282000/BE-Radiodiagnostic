@@ -133,7 +133,6 @@ class RadiographicsService {
     LEFT JOIN patients ON histories.patient_id = patients.id
     LEFT JOIN users doctor ON histories.doctor_id = doctor.id
     INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
-    group by radiographics.id
     `;
 
 
@@ -156,6 +155,8 @@ class RadiographicsService {
       }`;
       queryParams.push(month);
     }
+
+    queryText += ` group by radiographics.id`
 
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${
       queryParams.length + 2
