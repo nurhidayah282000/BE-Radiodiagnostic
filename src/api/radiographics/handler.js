@@ -127,7 +127,7 @@ class RadiographicsHandler {
       const { id: credentialId } = auth.credentials;
       await this._service.verifyUserAccess(credentialId);
       const page = query.page || 1;
-      const limit = 6;
+      const limit = 10;
       const offset = (page - 1) * limit;
       const { month, search } = query;
       const radiographics = await this._service.getAllHistories(

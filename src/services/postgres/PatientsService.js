@@ -63,8 +63,8 @@ class PatientsService {
       text: `SELECT radiographics.panoramik_upload_date, radiographics.panoramik_check_date
       FROM patients
       LEFT JOIN users ON patients.radiographic_id = users.id
-      LEFT JOIN histories ON patients.id = histories.patient_id
-      LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
+      LEFT JOIN (SELECT radiographic_id, MAX(patient_id) as patient_id FROM histories GROUP BY radiographic_id) history ON patients.id = history.patient_id
+      LEFT JOIN radiographics ON history.radiographic_id = radiographics.id
       `,
     };
 
