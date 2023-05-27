@@ -1,4 +1,4 @@
-const { nanoid } = require('nanoid');
+const { nanoid } = require("nanoid");
 
 class UsersHandler {
   constructor(service, pictureService, validator, pictureValidator) {
@@ -25,18 +25,37 @@ class UsersHandler {
       await this._service.verifyUserAccess(credentialId);
 
       const {
-        fullname, email, role, phone, gender, address, province, city, post_code, nip,
+        fullname,
+        email,
+        role,
+        phone,
+        gender,
+        address,
+        province,
+        city,
+        post_code,
+        nip,
       } = payload;
 
       const password = `${role}-${nanoid(8)}`;
 
       const userId = await this._service.addUser({
-        fullname, email, password, role, phone, gender, address, province, city, post_code, nip,
+        fullname,
+        email,
+        password,
+        role,
+        phone,
+        gender,
+        address,
+        province,
+        city,
+        post_code,
+        nip,
       });
 
       const response = h.response({
-        status: 'success',
-        message: 'User berhasil ditambahkan',
+        status: "success",
+        message: "User berhasil ditambahkan",
         data: userId,
         newPassword: password,
       });
@@ -58,12 +77,27 @@ class UsersHandler {
       const users = await this._service.getAllUsers(limit, offset, search);
       const totalRows = await this._service.getUserTotalRows();
 
+      let doctor = 0;
+      let radiographer = 0;
+      let total = 0;
+
+      totalRows.forEach((row) => {
+        if (row.role === "doctor") {
+          doctor = Number(row.total_rows);
+        } else if (row.role === "radiographer") {
+          radiographer = Number(row.total_rows);
+        }
+        total += Number(row.total_rows);
+      });
+
       return {
-        status: 'success',
+        status: "success",
         data: users,
         meta: {
-          totalRows,
-          totalPages: Math.ceil(totalRows / limit),
+          total,
+          doctor,
+          radiographer,
+          totalPages: Math.ceil(total / limit),
           currentPage: page,
         },
       };
@@ -78,7 +112,7 @@ class UsersHandler {
       const user = await this._service.getUserById(credentialId);
 
       return {
-        status: 'success',
+        status: "success",
         data: user,
       };
     } catch (error) {
@@ -95,7 +129,7 @@ class UsersHandler {
       const user = await this._service.getUserById(userId);
 
       return {
-        status: 'success',
+        status: "success",
         data: user,
       };
     } catch (error) {
@@ -110,8 +144,8 @@ class UsersHandler {
       const user = await this._service.editUser(credentialId, payload);
 
       const response = h.response({
-        status: 'success',
-        message: 'User berhasil diperbarui',
+        status: "success",
+        message: "User berhasil diperbarui",
         data: user,
       });
       response.code(201);
@@ -130,8 +164,8 @@ class UsersHandler {
       const user = await this._service.editUserById(userId, payload);
 
       const response = h.response({
-        status: 'success',
-        message: 'User berhasil diperbarui',
+        status: "success",
+        message: "User berhasil diperbarui",
         data: user,
       });
       response.code(201);
@@ -146,16 +180,24 @@ class UsersHandler {
       const { profilePicture } = payload;
       const { id: credentialId } = auth.credentials;
 
-      this._pictureValidator.validatePictureHeaders(profilePicture.hapi.headers);
+      this._pictureValidator.validatePictureHeaders(
+        profilePicture.hapi.headers
+      );
 
-      const filename = await this._pictureService.writeFile(profilePicture, profilePicture.hapi);
+      const filename = await this._pictureService.writeFile(
+        profilePicture,
+        profilePicture.hapi
+      );
       const pictureUrl = `/upload/pictures/${filename}`;
 
-      const user = await this._service.editUserPicture(credentialId, pictureUrl);
+      const user = await this._service.editUserPicture(
+        credentialId,
+        pictureUrl
+      );
 
       const response = h.response({
-        status: 'success',
-        message: 'User picture berhasil diperbarui',
+        status: "success",
+        message: "User picture berhasil diperbarui",
         data: user,
       });
       response.code(201);
@@ -170,12 +212,20 @@ class UsersHandler {
       const { password, newPassword, newPasswordConfirmation } = payload;
       const { id: credentialId } = auth.credentials;
 
-      await this._service.verifyNewPassword(credentialId, password, newPassword, newPasswordConfirmation);
-      const user = await this._service.editUserPassword(credentialId, newPassword);
+      await this._service.verifyNewPassword(
+        credentialId,
+        password,
+        newPassword,
+        newPasswordConfirmation
+      );
+      const user = await this._service.editUserPassword(
+        credentialId,
+        newPassword
+      );
 
       const response = h.response({
-        status: 'success',
-        message: 'User password berhasil diperbarui',
+        status: "success",
+        message: "User password berhasil diperbarui",
         data: user,
       });
       response.code(201);
@@ -194,8 +244,8 @@ class UsersHandler {
       const user = await this._service.deleteUserById(userId);
 
       const response = h.response({
-        status: 'success',
-        message: 'User berhasil dihapus',
+        status: "success",
+        message: "User berhasil dihapus",
         data: user,
       });
       response.code(201);
