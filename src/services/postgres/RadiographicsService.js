@@ -187,7 +187,6 @@ class RadiographicsService {
     LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
     LEFT JOIN users doctor ON histories.doctor_id = doctor.id
     INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
-    order by radiographics.panoramik_upload_date desc
     `;
 
     const queryParams = [];
@@ -209,6 +208,8 @@ class RadiographicsService {
       }`;
       queryParams.push(month);
     }
+
+    queryText +=  ` order by radiographics.panoramik_upload_date desc`
 
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${
       queryParams.length + 2
