@@ -217,8 +217,9 @@ class RadiographicsHandler {
 
       // worksheet.getCell('A1').alignment = { vertical: 'top', horizontal: 'left' };
 
+      const nameMonth = monthName(month) || 'All';
       const datenow = new Date().toISOString().substring(0, 10);
-      const filename = `recaps-${monthName(month)}-${datenow}.xlsx`;
+      const filename = `recaps-${nameMonth}-${datenow}.xlsx`;
       const excelUrl = `/upload/recaps/${filename}`;
 
       await workbook.xlsx.writeFile(
