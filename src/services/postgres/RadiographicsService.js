@@ -56,9 +56,16 @@ class RadiographicsService {
     const historyId = `history-${nanoid(16)}`;
 
     const historyQuery = {
-      text: `INSERT INTO histories (id, patient_id, radiographer_id, radiographic_id, panoramik_picture)
-        VALUES($1, $2, $3, $4, $5) RETURNING id`,
-      values: [historyId, patientId, radiographerId, radiographicId, panoramikPicture],
+      text: `INSERT INTO histories (id, patient_id, radiographer_id, radiographic_id, panoramik_picture, upload_date)
+        VALUES($1, $2, $3, $4, $5, $6) RETURNING id`,
+      values: [
+        historyId,
+        patientId,
+        radiographerId,
+        radiographicId,
+        panoramikPicture,
+        uploadDate,
+      ],
     };
 
     const historyResult = await this._pool.query(historyQuery);
@@ -135,7 +142,6 @@ class RadiographicsService {
     INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
     `;
 
-
     const queryParams = [];
     if (search) {
       const searchParam = `%${search.toLowerCase()}%`;
@@ -156,7 +162,7 @@ class RadiographicsService {
       queryParams.push(month);
     }
 
-    queryText += ` group by radiographics.id`
+    queryText += ` group by radiographics.id`;
 
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${
       queryParams.length + 2
@@ -209,7 +215,7 @@ class RadiographicsService {
       queryParams.push(month);
     }
 
-    queryText +=  ` order by radiographics.panoramik_upload_date desc`
+    queryText += ` order by histories.created_at desc`;
 
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${
       queryParams.length + 2
@@ -233,7 +239,7 @@ class RadiographicsService {
 
   async getRadiographicById(radiographicId) {
     const query = {
-      text: `SELECT histories.patient_id, patients.medic_number, patients.fullname, radiographics.id AS radiographics_id, 
+      text: `SELECT MAX(histories.id) as history_id, histories.patient_id, patients.medic_number, patients.fullname, radiographics.id AS radiographics_id, 
       radiographics.panoramik_picture, radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, 
       radiographics.status,doctor_id AS doctor_id, doctor.fullname AS doctor_name, radiographer.fullname AS radiographer_name, 
       json_agg(json_build_object('tooth_number', diagnoses.tooth_number, 'system_diagnosis', diagnoses.system_diagnosis, 'manual_diagnosis', diagnoses.manual_diagnosis, 'verificator_diagnosis', diagnoses.verificator_diagnosis)) AS diagnoses
@@ -243,7 +249,7 @@ class RadiographicsService {
       LEFT JOIN users doctor ON histories.doctor_id = doctor.id
       LEFT JOIN diagnoses ON radiographics.id = diagnoses.radiographic_id
       INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
-      WHERE histories.radiographic_id = $1
+      WHERE histories.id = (SELECT id FROM histories WHERE radiographic_id = $1 order by created_at desc limit 1)
       GROUP BY histories.patient_id, patients.medic_number, patients.fullname, radiographics.id, radiographics.panoramik_picture,
       radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status,doctor_id, doctor.fullname, radiographer.fullname
       `,
@@ -302,9 +308,21 @@ class RadiographicsService {
   }
 
   async editRadiographicPicture(radiographicId, pictureUrl) {
+    const uploadDate = new Date().toLocaleDateString("en-ZA", {
+      timeZone: "Asia/Jakarta",
+    });
+    const timestamp = new Date()
+
+    const historyQuery = {
+      text: "UPDATE histories SET panoramik_picture = $1, upload_date = $2, created_at = $3, updated_at = $3 WHERE id = (SELECT id FROM histories WHERE radiographic_id = $4 order by created_at desc limit 1) RETURNING id",
+      values: [pictureUrl, uploadDate, timestamp, radiographicId],
+    };
+
+    const historyResult = await this._pool.query(historyQuery);
+
     const query = {
-      text: "UPDATE radiographics SET panoramik_picture = $1 WHERE id = $2 RETURNING id, panoramik_picture",
-      values: [pictureUrl, radiographicId],
+      text: "UPDATE radiographics SET panoramik_picture = $1, panoramik_upload_date = $2 WHERE id = $3 RETURNING id, panoramik_picture",
+      values: [pictureUrl, uploadDate, radiographicId],
     };
 
     const result = await this._pool.query(query);
