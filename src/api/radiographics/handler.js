@@ -30,6 +30,8 @@ class RadiographicsHandler {
       this.deleteRadiographicInterpretationHandler.bind(this);
     this.deleteRadiographicByIdHandler =
       this.deleteRadiographicByIdHandler.bind(this);
+    this.updateRadiographicStatusHandler =
+      this.updateRadiographicStatusHandler.bind(this);
   }
 
   async postRadiographicHandler({ payload, auth, params }, h) {
@@ -106,12 +108,13 @@ class RadiographicsHandler {
       const page = query.page || 1;
       const limit = 6;
       const offset = (page - 1) * limit;
-      const { month, search } = query;
+      const { month, search, verified } = query;
       const radiographics = await this._service.getAllRadiographics(
         month,
         limit,
         offset,
-        search
+        search,
+        verified
       );
       const totalRows = await this._service.getRadiographicsTotalRows(month);
 
@@ -381,6 +384,29 @@ class RadiographicsHandler {
       });
       response.code(201);
       return response;
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async updateRadiographicStatusHandler({ auth, params }, h) {
+    try {
+      const { radiographicId } = params;
+      const { id: credentialId } = auth.credentials;
+
+      await this._service.verifyUserAccessDoctor(credentialId);
+
+      const radiographic = await this._service.updateRadiographicStatus({
+        radiographicId,
+      });
+
+      const response = h.response({
+        status: "success",
+        message: "Status radiografi berhasil diperbarui",
+        data: radiographic,
+      });
+
+      response.code(201);
     } catch (error) {
       return error;
     }

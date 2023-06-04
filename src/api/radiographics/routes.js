@@ -115,5 +115,13 @@ const routes = (handler) => [
       auth: "radiodiagnostic_jwt",
     },
   },
+  {
+    method: "GET",
+    path: "/radiographics/update/{radiographicId}/status",
+    handler: handler.updateRadiographicStatusHandler,
+    options: {
+      auth: "radiodiagnostic_jwt",
+    },
+  },
 ];
 module.exports = routes;

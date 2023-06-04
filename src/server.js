@@ -128,6 +128,7 @@ const init = async () => {
       plugin: diagnoses,
       options: {
         diagnosesService,
+        radiographicsService,
       },
     },
   ]);

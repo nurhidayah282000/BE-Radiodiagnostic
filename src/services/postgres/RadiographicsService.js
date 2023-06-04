@@ -21,14 +21,16 @@ class RadiographicsService {
       `SELECT * FROM histories WHERE patient_id = '${patientId}'`
     );
 
-    let radioQueryText = `INSERT INTO radiographics (id, panoramik_picture, panoramik_upload_date, status)
-    VALUES($1, $2, $3, $4) RETURNING id, panoramik_picture, panoramik_upload_date, status`;
+    let radioQueryText = `INSERT INTO radiographics (id, panoramik_picture, panoramik_upload_date, status, radiographer_id, patient_id)
+    VALUES($1, $2, $3, $4, $5, $6) RETURNING id, panoramik_picture, panoramik_upload_date, status`;
 
     let radioQueryParams = [
       radiographicId,
       panoramikPicture,
       uploadDate,
       status,
+      radiographerId,
+      patientId,
     ];
 
     if (radiographic.rowCount) {
@@ -53,26 +55,26 @@ class RadiographicsService {
       throw new InvariantError("Radiografi gagal ditambahkan");
     }
 
-    const historyId = `history-${nanoid(16)}`;
+    // const historyId = `history-${nanoid(16)}`;
 
-    const historyQuery = {
-      text: `INSERT INTO histories (id, patient_id, radiographer_id, radiographic_id, panoramik_picture, upload_date)
-        VALUES($1, $2, $3, $4, $5, $6) RETURNING id`,
-      values: [
-        historyId,
-        patientId,
-        radiographerId,
-        radiographicId,
-        panoramikPicture,
-        uploadDate,
-      ],
-    };
+    // const historyQuery = {
+    //   text: `INSERT INTO histories (id, patient_id, radiographer_id, radiographic_id, panoramik_picture, upload_date)
+    //     VALUES($1, $2, $3, $4, $5, $6) RETURNING id`,
+    //   values: [
+    //     historyId,
+    //     patientId,
+    //     radiographerId,
+    //     radiographicId,
+    //     panoramikPicture,
+    //     uploadDate,
+    //   ],
+    // };
 
-    const historyResult = await this._pool.query(historyQuery);
+    // const historyResult = await this._pool.query(historyQuery);
 
-    if (!historyResult.rowCount) {
-      throw new InvariantError("Riwayat gagal ditambahkan");
-    }
+    // if (!historyResult.rowCount) {
+    //   throw new InvariantError("Riwayat gagal ditambahkan");
+    // }
 
     return radiographicResult.rows[0];
   }
@@ -131,23 +133,54 @@ class RadiographicsService {
     return result.rows[0].total_rows;
   }
 
-  async getAllRadiographics(month, limit, offset, search) {
-    let queryText = `SELECT MAX(histories.patient_id) AS patient_id, MAX(patients.medic_number) AS medic_number, MAX(patients.fullname) AS fullname, MAX(radiographics.panoramik_picture) AS panoramik_picture,
-    MAX(radiographics.panoramik_upload_date) AS panoramik_upload_date, MAX(radiographics.id) AS radiographics_id, MAX(radiographics.panoramik_check_date) AS panoramik_check_date, MAX(radiographics.manual_interpretation) AS manual_interpretation, MAX(radiographics.status) AS status, MAX(doctor.fullname) AS doctor_name,
-    MAX(radiographer.fullname) AS radiographer_name
-    FROM radiographics
-    LEFT JOIN histories ON histories.radiographic_id = radiographics.id
-    LEFT JOIN patients ON histories.patient_id = patients.id
-    LEFT JOIN users doctor ON histories.doctor_id = doctor.id
-    INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
+  async getAllRadiographics(month, limit, offset, search, verified) {
+    // let queryText = `SELECT MAX(histories.patient_id) AS patient_id, MAX(patients.medic_number) AS medic_number, MAX(patients.fullname) AS fullname, MAX(radiographics.panoramik_picture) AS panoramik_picture,
+    // MAX(radiographics.panoramik_upload_date) AS panoramik_upload_date, MAX(radiographics.id) AS radiographics_id, MAX(radiographics.panoramik_check_date) AS panoramik_check_date, MAX(radiographics.manual_interpretation) AS manual_interpretation, MAX(radiographics.status) AS status, MAX(doctor.fullname) AS doctor_name,
+    // MAX(radiographer.fullname) AS radiographer_name
+    // FROM radiographics
+    // LEFT JOIN histories ON histories.radiographic_id = radiographics.id
+    // LEFT JOIN patients ON histories.patient_id = patients.id
+    // LEFT JOIN users doctor ON histories.doctor_id = doctor.id
+    // INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
+    // `;
+
+    let queryText = `SELECT r.id, r.radiographer_id AS radiographer_id, r.panoramik_upload_date AS panoramik_upload_date, r.id AS radiographics_id, r.panoramik_check_date AS panoramik_check_date, r.panoramik_picture AS panoramik_picture, r.status AS status, r.patient_id AS patient_id, h.id AS history_id, p.medic_number, p.fullname, u2.fullname AS doctor_name, u.fullname AS radiographer_name, json_agg(d.*) AS diagnoses, u2.id AS doctor_id
+    FROM radiographics r
+    LEFT JOIN patients p ON r.patient_id = p.id
+    LEFT JOIN users u ON r.radiographer_id = u.id
+    LEFT JOIN histories h ON r.id = h.radiographic_id
+    LEFT JOIN users u2 ON h.doctor_id = u2.id
+    LEFT JOIN (
+      SELECT radiographic_id, MAX(created_at) AS max_created_at
+      FROM histories
+      GROUP BY radiographic_id
+    ) latest
+    ON h.radiographic_id = latest.radiographic_id AND h.created_at = latest.max_created_at
+    LEFT JOIN diagnoses d ON h.id = d.history_id
     `;
 
     const queryParams = [];
     if (search) {
       const searchParam = `%${search.toLowerCase()}%`;
       queryText +=
-        "WHERE LOWER(patients.fullname) LIKE $1 OR LOWER(patients.medic_number) LIKE $1";
+        "WHERE LOWER(p.fullname) LIKE $1 OR LOWER(p.medic_number) LIKE $1";
       queryParams.push(searchParam);
+    }
+
+    if (verified !== undefined && verified !== "") {
+      if (queryParams.length > 0) {
+        queryText += " AND ";
+      } else {
+        queryText += " WHERE ";
+      }
+
+      if (verified == "true") {
+        verified = 1;
+      } else if (verified == "false") {
+        verified = 0;
+      }
+      queryText += `r.status = $${queryParams.length + 1}`;
+      queryParams.push(verified);
     }
 
     if (month !== undefined) {
@@ -156,13 +189,13 @@ class RadiographicsService {
       } else {
         queryText += " WHERE ";
       }
-      queryText += `EXTRACT(MONTH FROM date(radiographics.panoramik_upload_date)) = $${
+      queryText += `EXTRACT(MONTH FROM date(r.panoramik_upload_date)) = $${
         queryParams.length + 1
       }`;
       queryParams.push(month);
     }
 
-    queryText += ` group by radiographics.id`;
+    queryText += ` group by r.id, h.id, p.medic_number, p.fullname, u2.fullname, u.fullname, u2.id`;
 
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${
       queryParams.length + 2
@@ -239,19 +272,21 @@ class RadiographicsService {
 
   async getRadiographicById(radiographicId) {
     const query = {
-      text: `SELECT MAX(histories.id) as history_id, histories.patient_id, patients.medic_number, patients.fullname, radiographics.id AS radiographics_id, 
-      radiographics.panoramik_picture, radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, 
-      radiographics.status,doctor_id AS doctor_id, doctor.fullname AS doctor_name, radiographer.fullname AS radiographer_name, 
-      json_agg(json_build_object('tooth_number', diagnoses.tooth_number, 'system_diagnosis', diagnoses.system_diagnosis, 'manual_diagnosis', diagnoses.manual_diagnosis, 'verificator_diagnosis', diagnoses.verificator_diagnosis)) AS diagnoses
-      FROM histories
-      LEFT JOIN patients ON histories.patient_id = patients.id
-      LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
-      LEFT JOIN users doctor ON histories.doctor_id = doctor.id
-      LEFT JOIN diagnoses ON radiographics.id = diagnoses.radiographic_id
-      INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
-      WHERE histories.id = (SELECT id FROM histories WHERE radiographic_id = $1 order by created_at desc limit 1)
-      GROUP BY histories.patient_id, patients.medic_number, patients.fullname, radiographics.id, radiographics.panoramik_picture,
-      radiographics.panoramik_upload_date, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status,doctor_id, doctor.fullname, radiographer.fullname
+      text: `SELECT r.id, r.radiographer_id AS radiographer_id, r.panoramik_upload_date AS panoramik_upload_date, r.id AS radiographics_id, r.panoramik_check_date AS panoramik_check_date, r.panoramik_picture AS panoramik_picture, r.status AS status, r.patient_id AS patient_id, h.id AS history_id, p.medic_number, p.fullname, u2.fullname AS doctor_name, u.fullname AS radiographer_name, json_agg(d.*) AS diagnoses, u2.id AS doctor_id
+      FROM radiographics r
+      LEFT JOIN patients p ON r.patient_id = p.id
+      LEFT JOIN users u ON r.radiographer_id = u.id
+      LEFT JOIN histories h ON r.id = h.radiographic_id
+      LEFT JOIN users u2 ON h.doctor_id = u2.id
+      LEFT JOIN (
+        SELECT radiographic_id, MAX(created_at) AS max_created_at
+        FROM histories
+        GROUP BY radiographic_id
+      ) latest
+      ON h.radiographic_id = latest.radiographic_id AND h.created_at = latest.max_created_at
+      LEFT JOIN diagnoses d ON h.id = d.history_id
+      WHERE r.id = $1
+      GROUP BY r.id, h.id, p.medic_number, p.fullname, u2.fullname, u.fullname, u2.id
       `,
       values: [radiographicId],
     };
@@ -275,7 +310,7 @@ class RadiographicsService {
       LEFT JOIN patients ON histories.patient_id = patients.id
       LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
       LEFT JOIN users doctor ON histories.doctor_id = doctor.id
-      LEFT JOIN diagnoses ON radiographics.id = diagnoses.radiographic_id
+      LEFT JOIN diagnoses ON histories.id = diagnoses.history_id
       INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
       WHERE histories.id = $1
       GROUP BY histories.patient_id, patients.medic_number, patients.fullname, radiographics.id, histories.panoramik_picture,
@@ -293,10 +328,10 @@ class RadiographicsService {
     return result.rows[0];
   }
 
-  async editRadiographicDoctor(radiographicId, { doctorId }) {
+  async editRadiographicDoctor(radiographicId, { doctorId, historyId }) {
     const query = {
-      text: "UPDATE histories SET doctor_id = $1 WHERE radiographic_id = $2 RETURNING id",
-      values: [doctorId, radiographicId],
+      text: "UPDATE histories SET doctor_id = $1 WHERE id = $2 RETURNING id",
+      values: [doctorId, historyId],
     };
 
     const result = await this._pool.query(query);
@@ -304,6 +339,7 @@ class RadiographicsService {
     if (!result.rowCount) {
       throw new InvariantError("Radiografi gagal diperbarui");
     }
+
     return result.rows[0];
   }
 
@@ -311,7 +347,7 @@ class RadiographicsService {
     const uploadDate = new Date().toLocaleDateString("en-ZA", {
       timeZone: "Asia/Jakarta",
     });
-    const timestamp = new Date()
+    const timestamp = new Date();
 
     const historyQuery = {
       text: "UPDATE histories SET panoramik_picture = $1, upload_date = $2, created_at = $3, updated_at = $3 WHERE id = (SELECT id FROM histories WHERE radiographic_id = $4 order by created_at desc limit 1) RETURNING id",
@@ -383,6 +419,24 @@ class RadiographicsService {
     if (!result.rowCount) {
       throw new NotFoundError("Pasien gagal dihapus. Id tidak ditemukan");
     }
+  }
+
+  async updateRadiographicStatus({ radiographicId }) {
+    const now = new Date().toLocaleDateString("en-ZA", {
+      timeZone: "Asia/Jakarta",
+    });
+    const query = {
+      text: "UPDATE radiographics SET status = 1, panoramik_check_date = $1 WHERE id = $2 RETURNING id, status, panoramik_check_date",
+      values: [now, radiographicId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rowCount) {
+      throw new NotFoundError("Status radiografi gagal diperbarui");
+    }
+
+    return result.rows[0];
   }
 
   async verifyUserAccess(credentialId) {
