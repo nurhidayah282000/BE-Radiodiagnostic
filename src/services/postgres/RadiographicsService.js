@@ -14,35 +14,20 @@ class RadiographicsService {
       timeZone: "Asia/Jakarta",
     });
 
-    let radiographicId = `radiographic-${nanoid(16)}`;
+    let historyId = `history-${nanoid(16)}`;
     const status = 0;
 
-    const radiographic = await this._pool.query(
-      `SELECT * FROM histories WHERE patient_id = '${patientId}'`
-    );
-
-    let radioQueryText = `INSERT INTO radiographics (id, panoramik_picture, panoramik_upload_date, status, radiographer_id, patient_id)
-    VALUES($1, $2, $3, $4, $5, $6) RETURNING id, panoramik_picture, panoramik_upload_date, status`;
+    let radioQueryText = `INSERT INTO histories (id, panoramik_picture, upload_date, status, radiographer_id, patient_id)
+    VALUES($1, $2, $3, $4, $5, $6) RETURNING id, panoramik_picture, upload_date, status`;
 
     let radioQueryParams = [
-      radiographicId,
+      historyId,
       panoramikPicture,
       uploadDate,
       status,
       radiographerId,
       patientId,
     ];
-
-    if (radiographic.rowCount) {
-      radiographicId = radiographic.rows[0].radiographic_id;
-      radioQueryText = `UPDATE radiographics SET panoramik_picture = $1, panoramik_upload_date = $2, status = $3, history_id = null WHERE id = $4 RETURNING id, panoramik_picture, panoramik_upload_date, status`;
-      radioQueryParams = [
-        panoramikPicture,
-        uploadDate,
-        status,
-        radiographic.rows[0].radiographic_id,
-      ];
-    }
 
     const radiographicQuery = {
       text: radioQueryText,
@@ -109,23 +94,14 @@ class RadiographicsService {
 
   async getRadiographicsTotalRows(month) {
     let queryText = `SELECT COUNT(*) AS total_rows
-    FROM radiographics r
-    LEFT JOIN patients p ON r.patient_id = p.id
-    LEFT JOIN users u ON r.radiographer_id = u.id
-    LEFT JOIN histories h ON r.id = h.radiographic_id
-    LEFT JOIN users u2 ON h.doctor_id = u2.id
-    LEFT JOIN (
-      SELECT radiographic_id, MAX(created_at) AS max_created_at
-      FROM histories
-      GROUP BY radiographic_id
-    ) latest
-    ON h.radiographic_id = latest.radiographic_id AND h.created_at = latest.max_created_at
-    LEFT JOIN diagnoses d ON h.id = d.history_id
+    FROM histories h
     `;
 
     if (month !== undefined) {
-      queryText += ` WHERE EXTRACT(MONTH FROM date(radiographics.panoramik_upload_date)) = ${month}`;
+      queryText += ` WHERE EXTRACT(MONTH FROM date(h.upload_date)) = ${month}`;
     }
+
+    queryText += ` group by h.patient_id`;
 
     const query = {
       text: queryText,
@@ -141,28 +117,16 @@ class RadiographicsService {
   }
 
   async getAllRadiographics(month, limit, offset, search, verified) {
-    // let queryText = `SELECT MAX(histories.patient_id) AS patient_id, MAX(patients.medic_number) AS medic_number, MAX(patients.fullname) AS fullname, MAX(radiographics.panoramik_picture) AS panoramik_picture,
-    // MAX(radiographics.panoramik_upload_date) AS panoramik_upload_date, MAX(radiographics.id) AS radiographics_id, MAX(radiographics.panoramik_check_date) AS panoramik_check_date, MAX(radiographics.manual_interpretation) AS manual_interpretation, MAX(radiographics.status) AS status, MAX(doctor.fullname) AS doctor_name,
-    // MAX(radiographer.fullname) AS radiographer_name
-    // FROM radiographics
-    // LEFT JOIN histories ON histories.radiographic_id = radiographics.id
-    // LEFT JOIN patients ON histories.patient_id = patients.id
-    // LEFT JOIN users doctor ON histories.doctor_id = doctor.id
-    // INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
-    // `;
-
-    let queryText = `SELECT r.id, r.radiographer_id AS radiographer_id, r.panoramik_upload_date AS panoramik_upload_date, r.id AS radiographics_id, r.panoramik_check_date AS panoramik_check_date, r.panoramik_picture AS panoramik_picture, r.status AS status, r.patient_id AS patient_id, h.id AS history_id, p.medic_number, p.fullname, u2.fullname AS doctor_name, u.fullname AS radiographer_name, json_agg(d.*) AS diagnoses, u2.id AS doctor_id
-    FROM radiographics r
-    LEFT JOIN patients p ON r.patient_id = p.id
-    LEFT JOIN users u ON r.radiographer_id = u.id
-    LEFT JOIN histories h ON r.id = h.radiographic_id
-    LEFT JOIN users u2 ON h.doctor_id = u2.id
-    LEFT JOIN (
-      SELECT radiographic_id, MAX(created_at) AS max_created_at
+    let queryText = `SELECT h.id AS history_id, p.medic_number as medic_number, p.fullname, u2.fullname AS doctor_name, u.fullname AS radiographer_name, json_agg(d.*) AS diagnoses, u2.id AS doctor_id, h.panoramik_picture, h.upload_date, h.panoramik_check_date, h.status, h.system_check_date
+    FROM histories h
+    INNER JOIN (
+      SELECT patient_id, MAX(created_at) AS created_at
       FROM histories
-      GROUP BY radiographic_id
-    ) latest
-    ON h.radiographic_id = latest.radiographic_id AND h.created_at = latest.max_created_at
+      GROUP BY patient_id
+    )latest ON h.patient_id = latest.patient_id AND h.created_at = latest.created_at
+    LEFT JOIN patients p ON h.patient_id = p.id
+    LEFT JOIN users u ON h.radiographer_id = u.id
+    LEFT JOIN users u2 ON h.doctor_id = u2.id
     LEFT JOIN diagnoses d ON h.id = d.history_id
     `;
 
@@ -196,13 +160,14 @@ class RadiographicsService {
       } else {
         queryText += " WHERE ";
       }
-      queryText += `EXTRACT(MONTH FROM date(r.panoramik_upload_date)) = $${
+      queryText += `EXTRACT(MONTH FROM date(h.panoramik_upload_date)) = $${
         queryParams.length + 1
       }`;
       queryParams.push(month);
     }
 
-    queryText += ` group by r.id, h.id, p.medic_number, p.fullname, u2.fullname, u.fullname, u2.id`;
+    queryText += ` group by h.patient_id, h.id, p.medic_number, p.fullname, u2.fullname, u.fullname, u2.id, h.panoramik_picture, h.upload_date, h.panoramik_check_date, h.status, h.system_check_date`;
+    queryText += ` order by h.created_at desc`;
 
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${
       queryParams.length + 2
@@ -225,21 +190,20 @@ class RadiographicsService {
   }
 
   async getAllHistories(month, limit, offset, search) {
-    let queryText = `SELECT histories.id, histories.patient_id,patients.medic_number, patients.fullname, histories.panoramik_picture,
-    radiographics.panoramik_upload_date, radiographics.id AS radiographics_id, radiographics.panoramik_check_date, radiographics.manual_interpretation, radiographics.status, doctor.fullname AS doctor_name,
-    radiographer.fullname AS radiographer_name
-    FROM histories
-    LEFT JOIN patients ON histories.patient_id = patients.id
-    LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
-    LEFT JOIN users doctor ON histories.doctor_id = doctor.id
-    INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
+    let queryText = `SELECT h.id AS history_id, p.medic_number as medic_number, p.fullname, u2.fullname AS doctor_name, u.fullname AS radiographer_name, json_agg(d.*) AS diagnoses, u2.id AS doctor_id, h.panoramik_picture, h.upload_date, h.panoramik_check_date, h.status, h.system_check_date
+    FROM histories h
+    LEFT JOIN patients p ON h.patient_id = p.id
+    LEFT JOIN users u ON h.radiographer_id = u.id
+    LEFT JOIN users u2 ON h.doctor_id = u2.id
+    LEFT JOIN diagnoses d ON h.id = d.history_id
+    WHERE system_check_date IS NOT NULL
     `;
 
     const queryParams = [];
     if (search) {
       const searchParam = `%${search.toLowerCase()}%`;
       queryText +=
-        "WHERE LOWER(patients.fullname) LIKE $1 OR LOWER(patients.medic_number) LIKE $1";
+        " WHERE LOWER(patients.fullname) LIKE $1 OR LOWER(patients.medic_number) LIKE $1";
       queryParams.push(searchParam);
     }
 
@@ -255,7 +219,8 @@ class RadiographicsService {
       queryParams.push(month);
     }
 
-    queryText += ` order by histories.created_at desc`;
+    queryText += ` group by h.patient_id, h.id, p.medic_number, p.fullname, u2.fullname, u.fullname, u2.id, h.panoramik_picture, h.upload_date, h.panoramik_check_date, h.status`;
+    queryText += ` order by h.created_at desc`;
 
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${
       queryParams.length + 2
@@ -279,21 +244,14 @@ class RadiographicsService {
 
   async getRadiographicById(radiographicId) {
     const query = {
-      text: `SELECT r.id, r.radiographer_id AS radiographer_id, r.panoramik_upload_date AS panoramik_upload_date, r.id AS radiographics_id, r.panoramik_check_date AS panoramik_check_date, r.panoramik_picture AS panoramik_picture, r.status AS status, r.patient_id AS patient_id, h.id AS history_id, p.medic_number, p.fullname, u2.fullname AS doctor_name, u.fullname AS radiographer_name, json_agg(d.*) AS diagnoses, u2.id AS doctor_id
-      FROM radiographics r
-      LEFT JOIN patients p ON r.patient_id = p.id
-      LEFT JOIN users u ON r.radiographer_id = u.id
-      LEFT JOIN histories h ON r.id = h.radiographic_id
+      text: `SELECT h.id AS history_id, p.medic_number, p.fullname, u2.fullname AS doctor_name, u.fullname AS radiographer_name, json_agg(d.*) AS diagnoses, u2.id AS doctor_id, h.panoramik_picture, h.upload_date, h.panoramik_check_date, h.status, h.system_check_date
+      FROM histories h
+      LEFT JOIN patients p ON h.patient_id = p.id
+      LEFT JOIN users u ON h.radiographer_id = u.id
       LEFT JOIN users u2 ON h.doctor_id = u2.id
-      LEFT JOIN (
-        SELECT radiographic_id, MAX(created_at) AS max_created_at
-        FROM histories
-        GROUP BY radiographic_id
-      ) latest
-      ON h.radiographic_id = latest.radiographic_id AND h.created_at = latest.max_created_at
       LEFT JOIN diagnoses d ON h.id = d.history_id
-      WHERE r.id = $1
-      GROUP BY r.id, h.id, p.medic_number, p.fullname, u2.fullname, u.fullname, u2.id
+      WHERE h.id = $1
+      group by h.id, p.medic_number, p.fullname, u2.fullname, u.fullname, u2.id, h.panoramik_picture, h.upload_date, h.panoramik_check_date, h.status, h.system_check_date
       `,
       values: [radiographicId],
     };
@@ -315,7 +273,6 @@ class RadiographicsService {
       json_agg(json_build_object('tooth_number', diagnoses.tooth_number, 'system_diagnosis', diagnoses.system_diagnosis, 'manual_diagnosis', diagnoses.manual_diagnosis, 'verificator_diagnosis', diagnoses.verificator_diagnosis)) AS diagnoses
       FROM histories
       LEFT JOIN patients ON histories.patient_id = patients.id
-      LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
       LEFT JOIN users doctor ON histories.doctor_id = doctor.id
       LEFT JOIN diagnoses ON histories.id = diagnoses.history_id
       INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
@@ -357,7 +314,7 @@ class RadiographicsService {
     const timestamp = new Date();
 
     const historyQuery = {
-      text: "UPDATE histories SET panoramik_picture = $1, upload_date = $2, created_at = $3, updated_at = $3 WHERE id = (SELECT id FROM histories WHERE radiographic_id = $4 order by created_at desc limit 1) RETURNING id",
+      text: "UPDATE histories SET panoramik_picture = $1, upload_date = $2, created_at = $3, updated_at = $3 WHERE id = $4 RETURNING id",
       values: [pictureUrl, uploadDate, timestamp, radiographicId],
     };
 
@@ -417,7 +374,7 @@ class RadiographicsService {
 
   async deleteRadiographicById(id) {
     const query = {
-      text: "DELETE FROM radiographics WHERE id = $1 RETURNING id",
+      text: "DELETE FROM histories WHERE id = $1 RETURNING id",
       values: [id],
     };
 

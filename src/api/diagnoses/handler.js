@@ -103,12 +103,8 @@ class DiagnosesHandler {
       const { radiographicId } = params;
       const { patientId, radiographerId } = payload;
 
-      const radiographic = await this._radiographicService.getRadiographicById(
-        radiographicId
-      );
-
       const diagnoses = await this._service.getDummySystemDiagnoses({
-        radiographic,
+        historyId: radiographicId,
         patientId,
         radiographerId,
       });

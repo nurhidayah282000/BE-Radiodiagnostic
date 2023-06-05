@@ -122,21 +122,10 @@ class DiagnosesService {
     return diagnoseResult.rows[0];
   }
 
-  async getDummySystemDiagnoses({ radiographic, patientId, radiographerId }) {
+  async getDummySystemDiagnoses({ historyId, patientId, radiographerId }) {
     const query = {
-      text: `INSERT INTO histories (id, patient_id, radiographer_id, radiographic_id, panoramik_picture, upload_date, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                RETURNING id, patient_id, radiographer_id, radiographic_id, panoramik_picture, upload_date, created_at, updated_at`,
-      values: [
-        `history-${nanoid(16)}`,
-        patientId,
-        radiographerId,
-        radiographic.id,
-        radiographic.panoramik_picture,
-        radiographic.panoramik_upload_date,
-        new Date(),
-        new Date(),
-      ],
+      text: `UPDATE histories SET system_check_date = $1 WHERE id = $2 RETURNING id, patient_id, radiographer_id, panoramik_picture, upload_date, system_check_date, created_at, updated_at`,
+      values: [new Date(), historyId],
     };
 
     const history = await this._pool.query(query);
@@ -170,7 +159,7 @@ class DiagnosesService {
             diagnoseId,
             toothNumber,
             type[Math.floor(Math.random() * type.length)],
-            history.rows[0].id,
+            historyId,
           ],
         };
 
