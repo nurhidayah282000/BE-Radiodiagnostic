@@ -160,7 +160,7 @@ class RadiographicsService {
       } else {
         queryText += " WHERE ";
       }
-      queryText += `EXTRACT(MONTH FROM date(h.panoramik_upload_date)) = $${
+      queryText += `EXTRACT(MONTH FROM date(h.upload_date)) = $${
         queryParams.length + 1
       }`;
       queryParams.push(month);
