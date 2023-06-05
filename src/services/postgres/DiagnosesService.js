@@ -77,11 +77,11 @@ class DiagnosesService {
     toothNumber,
     manualDiagnosis,
     diagnosaId,
-    radiographic,
+    historyId,
   }) {
     let query = {
       text: `SELECT * FROM diagnoses WHERE tooth_number = $1 AND history_id = $2`,
-      values: [toothNumber, radiographic.history_id],
+      values: [toothNumber, historyId],
     };
 
     const result = await this._pool.query(query);
@@ -90,7 +90,7 @@ class DiagnosesService {
     if (result.rowCount) {
       const diagnoseQuery = {
         text: `UPDATE diagnoses SET manual_diagnosis = $1, is_corerct = 1, WHERE tooth_number = $2 AND history_id = $3 RETURNING id, tooth_number, manual_diagnosis`,
-        values: [manualDiagnosis, toothNumber, radiographic.history_id],
+        values: [manualDiagnosis, toothNumber, historyId],
       };
 
       diagnoseResult = await this._pool.query(diagnoseQuery);
@@ -108,7 +108,7 @@ class DiagnosesService {
           diagnoseId,
           toothNumber,
           manualDiagnosis,
-          radiographic.history_id,
+          historyId,
         ],
       };
 

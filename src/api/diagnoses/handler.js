@@ -72,14 +72,10 @@ class DiagnosesHandler {
       const { radiographicId } = params;
       const { toothNumber, manualDiagnosis } = payload;
 
-      const radiographic = await this._radiographicService.getRadiographicById(
-        radiographicId
-      );
-
       const diagnoses = await this._service.upsertManualDiagnose({
         toothNumber,
         manualDiagnosis,
-        radiographic,
+        historyId: radiographicId,
       });
 
       const response = h.response({
