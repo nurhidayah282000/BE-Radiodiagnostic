@@ -1,7 +1,7 @@
 exports.shorthands = undefined;
 
 exports.up = (pgm) => {
-  pgm.dropColumns("diagnoses", ["radiographics_id"]);
+  pgm.dropColumns("diagnoses", ["radiographic_id"]);
 };
 
 exports.down = (pgm) => {

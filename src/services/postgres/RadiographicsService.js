@@ -35,7 +35,7 @@ class RadiographicsService {
 
     if (radiographic.rowCount) {
       radiographicId = radiographic.rows[0].radiographic_id;
-      radioQueryText = `UPDATE radiographics SET panoramik_picture = $1, panoramik_upload_date = $2, status = $3 WHERE id = $4 RETURNING id, panoramik_picture, panoramik_upload_date, status`;
+      radioQueryText = `UPDATE radiographics SET panoramik_picture = $1, panoramik_upload_date = $2, status = $3, history_id = null WHERE id = $4 RETURNING id, panoramik_picture, panoramik_upload_date, status`;
       radioQueryParams = [
         panoramikPicture,
         uploadDate,
@@ -108,12 +108,19 @@ class RadiographicsService {
   }
 
   async getRadiographicsTotalRows(month) {
-    let queryText = `SELECT COUNT(*) as total_rows
-    FROM histories
-    LEFT JOIN patients ON histories.patient_id = patients.id
-    LEFT JOIN radiographics ON histories.radiographic_id = radiographics.id
-    LEFT JOIN users doctor ON histories.doctor_id = doctor.id
-    INNER JOIN users radiographer ON histories.radiographer_id = radiographer.id
+    let queryText = `SELECT COUNT(*) AS total_rows
+    FROM radiographics r
+    LEFT JOIN patients p ON r.patient_id = p.id
+    LEFT JOIN users u ON r.radiographer_id = u.id
+    LEFT JOIN histories h ON r.id = h.radiographic_id
+    LEFT JOIN users u2 ON h.doctor_id = u2.id
+    LEFT JOIN (
+      SELECT radiographic_id, MAX(created_at) AS max_created_at
+      FROM histories
+      GROUP BY radiographic_id
+    ) latest
+    ON h.radiographic_id = latest.radiographic_id AND h.created_at = latest.max_created_at
+    LEFT JOIN diagnoses d ON h.id = d.history_id
     `;
 
     if (month !== undefined) {
