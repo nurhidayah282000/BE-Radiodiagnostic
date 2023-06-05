@@ -60,11 +60,12 @@ class PatientsService {
 
   async getPatientTotalRows() {
     const query = {
-      text: `SELECT radiographics.panoramik_upload_date, radiographics.panoramik_check_date
+      text: `SELECT histories.upload_date, histories.panoramik_check_date
       FROM patients
       LEFT JOIN users ON patients.radiographic_id = users.id
-      LEFT JOIN (SELECT radiographic_id, MAX(patient_id) as patient_id FROM histories GROUP BY radiographic_id) history ON patients.id = history.patient_id
-      LEFT JOIN radiographics ON history.radiographic_id = radiographics.id
+      LEFT JOIN (
+        SELECT patient_id, MAX(upload_date) AS upload_date, MAX(panoramik_check_date) AS panoramik_check_date, MAX(created_at) as created_at FROM histories group by patient_id
+      ) histories ON patients.id = histories.patient_id
       `,
     };
 
@@ -137,11 +138,12 @@ class PatientsService {
   }
 
   async getAllPatients(limit, offset, search) {
-    let queryText = `SELECT patients.*, users.fullname as radiographer, history.radiographic_id, radiographics.panoramik_upload_date, radiographics.panoramik_check_date
+    let queryText = `SELECT patients.*, users.fullname as radiographer, latest.upload_date, latest.panoramik_check_date
     FROM patients
     LEFT JOIN users ON patients.radiographic_id = users.id
-    LEFT JOIN (SELECT radiographic_id, MAX(patient_id) as patient_id FROM histories GROUP BY radiographic_id) history ON patients.id = history.patient_id
-    LEFT JOIN radiographics ON history.radiographic_id = radiographics.id
+    LEFT JOIN (
+      SELECT patient_id, MAX(upload_date) AS upload_date, MAX(panoramik_check_date) AS panoramik_check_date, MAX(created_at) as created_at FROM histories group by patient_id
+    ) latest ON patients.id = latest.patient_id
     `;
 
     const queryParams = [limit, offset];
