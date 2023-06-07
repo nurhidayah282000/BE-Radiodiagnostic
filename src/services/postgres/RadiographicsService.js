@@ -150,7 +150,7 @@ class RadiographicsService {
       } else if (verified == "false") {
         verified = 0;
       }
-      queryText += `r.status = $${queryParams.length + 1}`;
+      queryText += `h.status = $${queryParams.length + 1}`;
       queryParams.push(verified);
     }
 
@@ -385,13 +385,13 @@ class RadiographicsService {
     }
   }
 
-  async updateRadiographicStatus({ radiographicId }) {
+  async updateRadiographicStatus({ historyId }) {
     const now = new Date().toLocaleDateString("en-ZA", {
       timeZone: "Asia/Jakarta",
     });
     const query = {
-      text: "UPDATE radiographics SET status = 1, panoramik_check_date = $1 WHERE id = $2 RETURNING id, status, panoramik_check_date",
-      values: [now, radiographicId],
+      text: "UPDATE histories SET status = 1, panoramik_check_date = $1 WHERE id = $2 RETURNING id, status, panoramik_check_date",
+      values: [now, historyId],
     };
 
     const result = await this._pool.query(query);

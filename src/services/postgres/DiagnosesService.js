@@ -59,9 +59,17 @@ class DiagnosesService {
     isCorrect,
     diagnosaId,
   }) {
+    const now = new Date();
+
     const diagnoseQuery = {
-      text: `UPDATE diagnoses SET verificator_diagnosis = $1, verificator_note = $2, is_corerct = $3 WHERE id = $4 RETURNING id, tooth_number, manual_diagnosis`,
-      values: [verificatorDiagnosis, verificatorNote, isCorrect, diagnosaId],
+      text: `UPDATE diagnoses SET verificator_diagnosis = $1, verificator_note = $2, verification_date = $3, is_corerct = $4 WHERE id = $5 RETURNING id, tooth_number, manual_diagnosis`,
+      values: [
+        verificatorDiagnosis,
+        verificatorNote,
+        now,
+        isCorrect,
+        diagnosaId,
+      ],
     };
 
     let diagnoseResult = await this._pool.query(diagnoseQuery);
@@ -104,12 +112,7 @@ class DiagnosesService {
       const diagnoseQuery = {
         text: `INSERT INTO diagnoses (id, is_corerct, tooth_number, manual_diagnosis, history_id)
                     VALUES($1, 1, $2, $3, $4) RETURNING id, tooth_number, system_diagnosis, history_id`,
-        values: [
-          diagnoseId,
-          toothNumber,
-          manualDiagnosis,
-          historyId,
-        ],
+        values: [diagnoseId, toothNumber, manualDiagnosis, historyId],
       };
 
       diagnoseResult = await this._pool.query(diagnoseQuery);
@@ -142,7 +145,7 @@ class DiagnosesService {
     const toothNumbers = [];
     const type = ["Karises", "Lesi Periapikal", "Impaksi", "Resorpsi"];
 
-    for (let index = 0; index < 3; index++) {
+    for (let index = 0; index < Math.floor(Math.random() * 3) + 1; index++) {
       toothNumbers.push(numbers[Math.floor(Math.random() * numbers.length)]);
     }
 

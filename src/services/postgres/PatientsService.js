@@ -85,8 +85,8 @@ class PatientsService {
       if (!row.panoramik_check_date) {
         unverified += 1;
       }
-      if (row.panoramik_upload_date) {
-        const uploadDate = new Date(row.panoramik_upload_date);
+      if (row.upload_date) {
+        const uploadDate = new Date(row.upload_date);
         const today = new Date();
         if (
           uploadDate.getDate() === today.getDate() &&

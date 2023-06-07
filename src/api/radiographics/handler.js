@@ -397,7 +397,7 @@ class RadiographicsHandler {
       await this._service.verifyUserAccessDoctor(credentialId);
 
       const radiographic = await this._service.updateRadiographicStatus({
-        radiographicId,
+        historyId: radiographicId,
       });
 
       const response = h.response({
