@@ -1,0 +1,27 @@
+name: Node.js CD
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Deploy using ssh
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.PRIVATE_KEY }}
+        port: 22
+        script: |
+          cd /home/ubuntu/BE-Radiodiagnostic
+          sudo git pull origin master
+          sudo npm install
+          sudo npm run migrate up
+          sudo pm2 reload backend
+          echo "done"
