@@ -95,13 +95,18 @@ class RadiographicsService {
   async getRadiographicsTotalRows(month) {
     let queryText = `SELECT COUNT(*) AS total_rows
     FROM histories h
+    INNER JOIN (
+      SELECT patient_id, MAX(created_at) AS created_at
+      FROM histories
+      GROUP BY patient_id
+    )latest ON h.patient_id = latest.patient_id AND h.created_at = latest.created_at
     `;
 
     if (month !== undefined) {
       queryText += ` WHERE EXTRACT(MONTH FROM date(h.upload_date)) = ${month}`;
     }
 
-    queryText += ` group by h.patient_id`;
+    // queryText += ` group by h.patient_id`;
 
     const query = {
       text: queryText,
