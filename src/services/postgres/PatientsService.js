@@ -149,9 +149,17 @@ class PatientsService {
     const queryParams = [limit, offset];
 
     if (search) {
-      queryText +=
-        " WHERE LOWER(patients.fullname) LIKE $3 OR LOWER(patients.medic_number) LIKE $3";
-      queryParams.push(`%${search.toLowerCase()}%`);
+      let newQuery = "";
+      if (search.toLowerCase() === "proses") {
+        newQuery = " WHERE panoramik_check_date IS NULL";
+      } else if (search.toLowerCase() === "selesai") {
+        newQuery = " WHERE panoramik_check_date IS NOT NULL";
+      } else {
+        newQuery =
+          " WHERE LOWER(patients.fullname) LIKE $3 OR LOWER(patients.medic_number) LIKE $3";
+        queryParams.push(`%${search.toLowerCase()}%`);
+      }
+      queryText += newQuery;
     }
 
     queryText += " LIMIT $1 OFFSET $2";
