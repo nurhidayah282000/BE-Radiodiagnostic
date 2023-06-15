@@ -208,21 +208,21 @@ class RadiographicsService {
     if (search) {
       const searchParam = `%${search.toLowerCase()}%`;
       queryText +=
-        " WHERE LOWER(patients.fullname) LIKE $1 OR LOWER(patients.medic_number) LIKE $1";
+        " AND LOWER(p.fullname) LIKE $1 OR LOWER(p.medic_number) LIKE $1";
       queryParams.push(searchParam);
     }
 
-    if (month !== undefined) {
-      if (queryParams.length > 0) {
-        queryText += " AND ";
-      } else {
-        queryText += " WHERE ";
-      }
-      queryText += `EXTRACT(MONTH FROM date(radiographics.panoramik_upload_date)) = $${
-        queryParams.length + 1
-      }`;
-      queryParams.push(month);
-    }
+    // if (month !== undefined) {
+    //   if (queryParams.length > 0) {
+    //     queryText += " AND ";
+    //   } else {
+    //     queryText += " WHERE ";
+    //   }
+    //   queryText += `EXTRACT(MONTH FROM date(radiographics.panoramik_upload_date)) = $${
+    //     queryParams.length + 1
+    //   }`;
+    //   queryParams.push(month);
+    // }
 
     queryText += ` group by h.patient_id, h.id, p.medic_number, p.fullname, u2.fullname, u.fullname, u2.id, h.panoramik_picture, h.upload_date, h.panoramik_check_date, h.status`;
     queryText += ` order by h.created_at desc`;
